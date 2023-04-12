@@ -1,7 +1,6 @@
-#include <iostream>
-using namespace std;
+#ifndef __UTILITY_H
+#define __UTILITY_H
 
-int main(int argc, char **argv)
-{
+#include "flightDB.h"
 
-}
+#endif
