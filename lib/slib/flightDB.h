@@ -4,7 +4,7 @@
 #include <string>
 #include <list>
 #include <iostream>
-#include <sstream>
+
 #include <fstream>
 #include "airport.h"
 #include "flight.h"
@@ -19,9 +19,8 @@ public:
     void rerun_script() const;
     const std::list<const std::string&> get_airports_names() const;
 private:
-    std::list<Flight>&& getFlightsFromFiles(ifstream& inFile);
-    bool load_flights_to_DB(const string& filePath, const string& postfix, const string& airportCode);
-
+    std::list<Flight>&& getFlightsFromFiles(std::ifstream& inFile);
+    bool load_flights_to_DB(const std::string& filePath, const std::string& postfix, const std::string& airportCode);
     std::list<Airport> Airports;
     bool loaded;
 };
