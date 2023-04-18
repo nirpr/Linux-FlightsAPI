@@ -18,12 +18,13 @@ public:
     const std::list<Flight>& get_flightsDpt() const { return flightsDpt; }
     const std::list<Flight>& get_flightsArv() const { return flightsArv; }
     friend bool operator==(const Airport& lhs, const Airport& rhs);
-
+    bool changeDataLoadStatus(bool newStatus);
 private:
     std::string name;  // airport-code
     int num_flights;
     int num_flightsDpt;
     int num_flightsArv;
+    bool ariportDataLoaded;
     std::list<Flight> flightsDpt;
     std::list<Flight> flightsArv;
 };
