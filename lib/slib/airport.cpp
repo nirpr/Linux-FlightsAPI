@@ -13,14 +13,14 @@ bool Airport::changeDataLoadStatus(bool newStatus)
 
 void Airport::add_flightDpt(const Flight& flight) 
 {
-    flightsDpt.push_back(std::move(flight));
+    flightsDpt.push_back(flight);
     this->num_flights++;
     this->num_flightsDpt++;
 }
 
 void Airport::add_flightArv(const Flight& flight) 
 {
-    flightsArv.push_back(std::move(flight));
+    flightsArv.push_back(flight);
     this->num_flights++;
     this->num_flightsArv++;
 

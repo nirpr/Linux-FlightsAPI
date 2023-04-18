@@ -1,3 +1,23 @@
-#include <iostream>
+#include "utility.h"
 using namespace std;
 
+
+void getDirectoryFromFile(string& filePath)
+{
+	const size_t last_slash_index = filePath.rfind('\\');
+	if (string::npos != last_slash_index)
+	{
+		filePath = filePath.substr(0, last_slash_index);
+	}
+}
+
+std::string unix_time_to_date(const time_t& unix_time)
+{
+    struct tm timeinfo;
+    char buffer[50];
+    gmtime_s(&timeinfo, &unix_time); // "%Y-%m-%d %H:%M:%S"
+
+    strftime(buffer, 50, "(%H:%M:%S , %d/%m/%Y)", &timeinfo);
+    std::string string_time(buffer);
+    return string_time;
+}

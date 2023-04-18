@@ -1,18 +1,16 @@
 #ifndef __AIRPORT_H
 #define __AIRPORT_H
 
-#include <string>
-#include <iostream>
 #include <list>
 #include "flight.h"
 
 class Airport {
 public:
     enum class direction { arrivals, departures, size };
-    Airport(std::string name) : name(name), num_flights(0), num_flightsArv(0),num_flightsDpt(0) {}
+    Airport(const std::string& name) : name(name.c_str()), num_flights(0), num_flightsArv(0),num_flightsDpt(0), ariportDataLoaded(false) {}
     void add_flightDpt(const Flight& flight);
     void add_flightArv(const Flight& flight);
-    std::string get_name() const { return name; }
+    const std::string& get_name() const { return name; }
     int get_num_flights() const { return num_flights; }
     int get_num_flightsDpt() const { return num_flightsDpt; }
     int get_num_flightsArv() const { return num_flightsArv; }
