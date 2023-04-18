@@ -7,3 +7,8 @@ bool operator==(const Flight& lhs, const Flight& rhs)
             && lhs.get_callsign() == rhs.get_callsign() && lhs.get_destination() == rhs.get_destination()
             && lhs.get_origin() == rhs.get_origin();
 }
+
+bool operator==(const Flight& lhs, const string& icao24)
+{
+    return lhs.get_icao24().compare(icao24); 
+}

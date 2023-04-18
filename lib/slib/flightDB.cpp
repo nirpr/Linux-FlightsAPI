@@ -15,6 +15,24 @@ bool FlightDatabase::load_db(const string &dataBasePath, const string &airportCo
         cerr << "Error: in loading data to Airport "<< airportCode <<" from database" << endl;
     }
 }
+const list<Flight> FlightDatabase::getAirplanes(const string& icao24) const
+{
+    vector<list<Flight>> flights;
+    flights.resize((int)Airport::direction::size);
+    for(auto& airport : this->Airports)
+    {
+        for(auto& flight : airport.get_flightsArv())
+        {
+            if(flight == icao24)
+                flights.at((int)Airport::direction::arrivals).push_back(flight);
+        }
+        for(auto& flight : airport.get_flightsDpt())
+        {
+            if(flight == icao24)
+                flights.at((int)Airport::direction::departures).push_back(flight);
+        }
+    }
+}
 
 bool FlightDatabase::load_flights_to_DB(const string& filePath, const string& postfix, const string& airportCode)
 {

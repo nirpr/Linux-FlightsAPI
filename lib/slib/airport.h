@@ -8,6 +8,7 @@
 
 class Airport {
 public:
+    enum class direction { arrivals, departures, size };
     Airport(std::string name) : name(name), num_flights(0), num_flightsArv(0),num_flightsDpt(0) {}
     void add_flightDpt(const Flight& flight);
     void add_flightArv(const Flight& flight);
@@ -28,16 +29,5 @@ private:
     std::list<Flight> flightsDpt;
     std::list<Flight> flightsArv;
 };
-
-void Airport::add_flightDpt(const Flight& flight) {
-    flightsDpt.push_back(std::move(flight));
-    this->num_flights++;
-    this->num_flightsDpt++;
-}
-void Airport::add_flightArv(const Flight& flight) {
-    flightsArv.push_back(std::move(flight));
-    this->num_flights++;
-    this->num_flightsArv++;
-}
 
 #endif

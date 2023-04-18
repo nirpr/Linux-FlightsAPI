@@ -21,7 +21,7 @@ public:
     int get_departure_time() const { return departure_time; }
     int get_arrival_time() const { return arrival_time; }
     friend bool operator==(const Flight& lhs, const Flight& rhs);
-
+    friend bool operator==(const Flight& lhs, const string& icao24);
 private:
     const std::string icao24;
     const std::string callsign;
