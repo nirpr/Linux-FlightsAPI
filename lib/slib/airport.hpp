@@ -2,7 +2,7 @@
 #define __AIRPORT_H
 
 #include <list>
-#include "flight.h"
+#include "flight.hpp"
 
 class Airport {
 public:

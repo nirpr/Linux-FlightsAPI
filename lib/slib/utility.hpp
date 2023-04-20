@@ -1,7 +1,7 @@
 #ifndef __UTILITY_H
 #define __UTILITY_H
 
-#include "flightDB.h"
+#include "flightDB.hpp"
 #include <ctime>
 #include <string>
 #include <sstream>

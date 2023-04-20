@@ -3,8 +3,7 @@
 
 #include <iostream>
 #include <set>
-#include "slib/flightDB.h"
-#include "slib/utility.h"
+#include "slib/utility.hpp"
 
 void printArrivingFlightDetails(const Flight& flight);
 void printDepartingFlightDetails(const Flight& flight);

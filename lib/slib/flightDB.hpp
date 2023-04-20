@@ -9,8 +9,8 @@
 #include <stdexcept>
 #include <filesystem>
 
-#include "airport.h"
-#include "flight.h"
+#include "airport.hpp"
+#include "flight.hpp"
 
 class FlightDatabase {
 public:
