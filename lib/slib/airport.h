@@ -6,7 +6,7 @@
 
 class Airport {
 public:
-    enum class direction { arrivals, departures, size };
+    enum class Directions { arriving, destinations, both };
     Airport(const std::string& name) : name(name.c_str()), num_flights(0), num_flightsArv(0),num_flightsDpt(0), ariportDataLoaded(false) {}
     void add_flightDpt(const Flight& flight);
     void add_flightArv(const Flight& flight);

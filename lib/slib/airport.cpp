@@ -23,7 +23,6 @@ void Airport::add_flightArv(const Flight& flight)
     flightsArv.push_back(flight);
     this->num_flights++;
     this->num_flightsArv++;
-
 }
 
 
