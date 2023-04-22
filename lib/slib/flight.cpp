@@ -1,4 +1,4 @@
-#include "flight.hpp"
+#include "flight.h"
 using namespace std;
 
 bool operator==(const Flight& lhs, const Flight& rhs)

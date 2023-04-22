@@ -1,8 +1,8 @@
-#ifndef __AIRPORT_HPP
-#define __AIRPORT_HPP
+#ifndef __AIRPORT_H
+#define __AIRPORT_H
 
 #include <list>
-#include "flight.hpp"
+#include "flight.h"
 
 class Airport {
 public:
