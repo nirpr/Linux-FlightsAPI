@@ -1,5 +1,5 @@
 #include <iostream>
-#include "slib\flightDB.h"
+#include "slib/flightDB.hpp"
 using namespace std;
 
 int main(int argc, char **argv)

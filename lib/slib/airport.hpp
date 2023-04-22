@@ -1,5 +1,5 @@
-#ifndef __AIRPORT_H
-#define __AIRPORT_H
+#ifndef __AIRPORT_HPP
+#define __AIRPORT_HPP
 
 #include <list>
 #include "flight.hpp"

@@ -1,4 +1,4 @@
-#include "flightDB.h"
+#include "flightDB.hpp"
 using namespace std;
 namespace fs = std::filesystem;
 
@@ -6,7 +6,7 @@ bool FlightDatabase::load_db(const string &dataBasePath, const string &airportCo
 {
     string airportPathDB(dataBasePath); 
     // adding flightsDB directory ("\\" for windows and "/" for linux)
-    airportPathDB.append("\\").append(airportCode); // Add to path .../airportCode // Folder Path
+    airportPathDB.append("/").append(airportCode); // Add to path .../airportCode // Folder Path
     bool arv = false, dst = false;
     for(const auto& itr : fs::directory_iterator(airportPathDB))
     {

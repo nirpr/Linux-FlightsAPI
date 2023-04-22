@@ -1,5 +1,5 @@
-#ifndef __FLIGHT_DB_H
-#define __FLIGHT_DB_H
+#ifndef __FLIGHT_DB_HPP
+#define __FLIGHT_DB_HPP
 
 #include <set>
 #include <vector>

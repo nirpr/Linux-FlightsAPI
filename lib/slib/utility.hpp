@@ -1,5 +1,5 @@
-#ifndef __UTILITY_H
-#define __UTILITY_H
+#ifndef __UTILITY_HPP
+#define __UTILITY_HPP
 
 #include "flightDB.hpp"
 #include <ctime>
