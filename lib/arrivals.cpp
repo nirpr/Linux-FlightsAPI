@@ -21,6 +21,7 @@ int main(int argc, char **argv)
     {
         list<Flight>::const_iterator itrArv = airport.get_flightsArv().begin();
         list<Flight>::const_iterator itrArvEnd = airport.get_flightsArv().end();
+        cout << airport.get_name() << ":" << endl;
         while(itrArv != itrArvEnd)
         {
             printArrivingFlightDetails(*itrArv);

@@ -24,13 +24,13 @@ OBJS := $(patsubst %.cpp,%.out,$(wildcard lib/*.cpp))
 
 # Default target
 .PHONY: all move clean
-all: $(OBJS) 
+all: $(OBJS) move
 
 # Rule for create .out file -- Done
 %.out : %.o	$(LIB)
 	$(CXX) $^ -o $@ $(LDFLAGS) $(LIB)
 
-# Rule for compiling source files
+# Rule for compiling source filesSS
 %.o : %.cpp
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
