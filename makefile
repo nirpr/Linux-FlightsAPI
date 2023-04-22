@@ -2,8 +2,8 @@
 .DEFAULT_GOAL := all
 CXX = g++ # Compiler
 CXXFLAGS = -Werror -std=c++17  # Compiler flags
-LDFLAGS =  -Wl,-rpath=`pwd` # Linker flags
-# -L./lib -Ilib/slib -Ilib
+#LDFLAGS =  -Wl,-rpath=`pwd` # Linker flags
+LDFLAGS = -L./lib -Ilib/slib -Ilib
 LIB = libutilities.so # Name of shared library
 INCLUDE_LIB = -I./lib/slib
 
@@ -28,15 +28,15 @@ all: $(OBJS)
 
 # Rule for create .out file -- Done
 %.out : %.o	$(LIB)
-	$(CXX) $^ -o $@ $(LDFLAGS)
+	$(CXX) $^ -o $@ $(LDFLAGS) $(LIB)
 
 # Rule for compiling source files
 %.o : %.cpp
-	$(CXX) -c $(CXXFLAGS) $(LIB) $< -o $@
+	$(CXX) -c $(CXXFLAGS) $< -o $@
 
 # Rule for creating shared library
 $(LIB): $(UTILS)
-	$(CXX) -shared -fPIC $(LDFLAGS) $^ -o $@ 
+	$(CXX) -shared -fPIC $(CXXFLAGS) $^ -o $@ 
 # move the directory to parent directory
 ODIR := .
 move:
