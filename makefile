@@ -3,7 +3,7 @@
 CXX = g++ # Compiler
 CXXFLAGS = -Werror -std=c++17  # Compiler flags
 #LDFLAGS =  -Wl,-rpath=`pwd` # Linker flags
-LDFLAGS = -L./lib -Ilib/slib -Ilib
+LDFLAGS = -L./lib -Ilib/slib -Ilib -Wl,-rpath=`pwd`
 LIB = libutilities.so # Name of shared library
 INCLUDE_LIB = -I./lib/slib
 
