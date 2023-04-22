@@ -32,5 +32,5 @@ bool operator>(const Flight& lhs, const Flight& rhs)
 
 bool operator==(const Flight& lhs, const string& icao24)
 {
-    return lhs.get_icao24().compare(icao24); 
+    return lhs.get_icao24().compare(icao24) == 0; 
 }
