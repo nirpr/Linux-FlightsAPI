@@ -2,11 +2,7 @@
 #define __FLIGHT_H
 
 #include <string>
-// arrivals: callsign , airport-code, takeoff time, arrival time
-// full_schedule: callsign, airport-code, time arrive or department
-// airplane: airplane-name(icao24),airport-code, takeoff time, arrival time
 
-// ICAO24, callsign, airport-code, takeoff time, arrival time
 class Flight {
 public:
     Flight(std::string icao24, std::string callsign, std::string origin, std::string destination, int departure_time, int arrival_time)

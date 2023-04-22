@@ -13,7 +13,7 @@ int main(int argc, char** argv)
     string pathDB(argv[0]);
     getDirectoryFromFile(pathDB);
     int airplanes_amount = argc - 1;
-    pathDB += "\\flightsDB"; // adding flightsDB directory ("\\" for windows and "/" for linux)
+    pathDB += "/flightsDB"; // adding flightsDB directory ("\\" for windows and "/" for linux)
     for (const auto& file_itr : fs::directory_iterator(pathDB))
     {
         string name = file_itr.path().filename().string();

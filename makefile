@@ -1,40 +1,47 @@
 # Makefile for compiling C++ programs with a shared library
-
-# Compiler
-CXX = g++
-# Compiler flags
-CXXFLAGS = -Werror -std=c++17 
-# Linker flags
-LDFLAGS =  -Wl,-rpath=`pwd`
+.DEFAULT_GOAL := all
+CXX = g++ # Compiler
+CXXFLAGS = -Werror -std=c++17  # Compiler flags
+LDFLAGS =  -Wl,-rpath=`pwd` # Linker flags
 # -L./lib -Ilib/slib -Ilib
+LIB = libutilities.so # Name of shared library
+INCLUDE_LIB = -I./lib/slib
+
 # getting all programs with .cpp
 LIBDIR=lib
-SRCS := $(subst ./,,$(shell find . -name "*.cpp"))
-#SRCS := $(wildcard $(LIBDIR)/*.cpp) # Create list of srouces cpp files
+# SRCS := $(subst ./,,$(shell find . -name "*.cpp"))
+SRCS := $(wildcard $(LIBDIR)/*.cpp) # Create list of srouces cpp files
 
 # getting all utilities required for shared program
 SLIBDIR=$(LIBDIR)/slib
-# UTILS := $(wildcard $(SLIBDIR)/*.cpp) 
 UTILS := $(wildcard $(SLIBDIR)/*.cpp) # Create list of utilities cpp files
 # List of object files (generated from source files)
+
+#OBJS := $(patsubst %.cpp,%.out,$(wildcard lib/*.cpp))
 OBJS := $(patsubst %.cpp,%.out,$(wildcard lib/*.cpp))
 
-# Name of shared library
-LIBRARY = utilities.so
+
 
 # Default target
+.PHONY: all move clean
 all: $(OBJS) 
 
 # Rule for create .out file -- Done
-%.out : %.o $(LIBRARY)
+%.out : %.o	$(LIB)
 	$(CXX) $^ -o $@ $(LDFLAGS)
+
 # Rule for compiling source files
 %.o : %.cpp
-	$(CXX) -c $(CXXFLAGS) $< -o $@
+	$(CXX) -c $(CXXFLAGS) $(LIB) $< -o $@
+
 # Rule for creating shared library
-$(LIBRARY): $(UTILS)
-	$(CXX) -shared -fPIC $(LDFLAGS) $(CXXFLAGS) $^ -o $@ 
+$(LIB): $(UTILS)
+	$(CXX) -shared -fPIC $(LDFLAGS) $^ -o $@ 
+# move the directory to parent directory
+ODIR := .
+move:
+	mv ./$(LIBDIR)/*.out $(ODIR)
 # Clean up
-.PHONY: clean
 clean:
 	find . -name "*.out" -exec rm -rf {} \;
+	find . -name "*.so" -exec rm -rf {} \;
