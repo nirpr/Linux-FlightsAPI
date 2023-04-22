@@ -1,5 +1,5 @@
-#ifndef __FLIGHT_HPP
-#define __FLIGHT_HPP
+#ifndef __FLIGHT_H
+#define __FLIGHT_H
 
 #include <string>
 // arrivals: callsign , airport-code, takeoff time, arrival time

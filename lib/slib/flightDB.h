@@ -1,5 +1,5 @@
-#ifndef __FLIGHT_DB_HPP
-#define __FLIGHT_DB_HPP
+#ifndef __FLIGHT_DB_H
+#define __FLIGHT_DB_H
 
 #include <set>
 #include <vector>
@@ -9,8 +9,8 @@
 #include <stdexcept>
 #include <filesystem>
 
-#include "airport.hpp"
-#include "flight.hpp"
+#include "airport.h"
+#include "flight.h"
 
 class FlightDatabase {
 public:

@@ -1,4 +1,4 @@
-#include "full_schedule.hpp"
+#include "full_schedule.h"
 using namespace std;
 
 int main(int argc, char** argv)
