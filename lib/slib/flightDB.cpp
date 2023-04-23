@@ -8,28 +8,49 @@ bool FlightDatabase::load_db(const string &dataBasePath, const string &airportCo
     // adding flightsDB directory ("\\" for windows and "/" for linux)
     airportPathDB.append("/").append(airportCode); // Add to path .../airportCode // Folder Path
     bool arv = false, dst = false;
-    for(const auto& itr : fs::directory_iterator(airportPathDB))
+    try
     {
-        try
-        {   
-            if (itr.path().extension().string() == ".arv")
-                arv = true;
-            else if (itr.path().extension().string() == ".dpt")
-                dst = true;
-            load_flights_to_DB(itr, airportCode);
-        }
-        catch(const std::exception& e)
+        fs::directory_iterator dict_itr(airportPathDB);
+        for (const auto& itr : dict_itr)
         {
-            cerr << e.what() << " " << itr.path().filename().string() << " from database" << endl;
+            try
+            {
+                if (itr.path().extension().string() == ".arv")
+                    arv = true;
+                else if (itr.path().extension().string() == ".dpt")
+                    dst = true;
+                load_flights_to_DB(itr, airportCode);
+            }
+            catch (const std::exception& e)
+            {
+                cerr << e.what() << " " << itr.path().filename().string() << " from database" << endl;
+            }
+        }
+        if (arv == false)
+        {
+            cerr << "There are no arrivals to " << airportCode << " Airport." << endl;
+        }
+        if (arv == false)
+        {
+            cerr << "There are no departures to " << airportCode << " Airport." << endl;
         }
     }
-    if (arv == false)
+    catch (const fs::filesystem_error& e)
     {
-        cerr << "There are no arrivals to " << airportCode << " Airport." << endl;
-    }
-    if (arv == false)
-    {
-        cerr << "There are no departures to " << airportCode << " Airport." << endl;
+        if (e.code().value() == (int)__std_win_error::_File_not_found || e.code().value() == (int)__std_win_error::_Path_not_found)
+        {
+            cerr << "Error: Airport " << airportCode << " not found in the Database." << endl;
+            return false;
+        }
+        else if (e.code().value() == (int)__std_win_error::_File_not_found)
+        {
+            cerr << "Error: Access Denied to " << airportCode << " from the Database" << endl;
+            return false;
+        }
+        else
+        {
+            cerr << "Error: Unknown error in reading " << airportCode << " from the Database" << endl;
+        }
     }
     return true;
 }

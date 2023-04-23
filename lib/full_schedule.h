@@ -5,7 +5,4 @@
 #include <set>
 #include "slib/utility.h"
 
-void printArrivingFlightDetails(const Flight& flight);
-void printDepartingFlightDetails(const Flight& flight);
-
 #endif

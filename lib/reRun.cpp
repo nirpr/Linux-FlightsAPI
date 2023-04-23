@@ -13,14 +13,31 @@ int main(int argc, char** argv)
         getDirectoryFromFile(pathDB);
         int airplanes_amount = argc - 1;
         pathDB += "/flightsDB"; // adding flightsDB directory ("\\" for windows and "/" for linux)
-        for (const auto& file_itr : fs::directory_iterator(pathDB))
+        try {
+            for (const auto& file_itr : fs::directory_iterator(pathDB))
+            {
+                airports = airports + ' ' + file_itr.path().filename().string();
+            }
+        }
+        catch (const fs::filesystem_error& e)
         {
-            airports = airports + ' ' + file_itr.path().filename().string();
+            if(e.code().value() == (int)__std_win_error::_File_not_found || e.code().value() == (int)__std_win_error::_Path_not_found)
+                cerr << "Error: FlightDB is not exist, In this case for run this script and load database need to enter paramaters." << endl;
+            else if (e.code().value() == (int)__std_win_error::_Access_denied)
+            {
+                cerr << "Error: Access Denied to FlightDB, check premissions." << endl;
+                return false;
+            }
+            else
+            {
+                cerr << "Error: Unknown error in reading data from Database" << endl;
+            }
+            return EXIT_FAILURE;
         }
     }
     else
     {
-        system("rm -r flightsDB");
+        system("rm -r flightsDB"); 
         for (int i = 1; i < argc; ++i)
         {
             airports += ' ';

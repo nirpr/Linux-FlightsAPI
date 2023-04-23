@@ -6,7 +6,4 @@
 #include "slib/utility.h"
 #include "slib/flightDB.h"
 
-
-void printArrivingFlightDetails(const Flight& flight);
-
 #endif
