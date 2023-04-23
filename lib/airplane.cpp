@@ -24,9 +24,9 @@ int main(int argc, char** argv)
     }
     catch (const fs::filesystem_error& e)
     {
-        if (e.code().value() == (int)__std_win_error::_File_not_found || e.code().value() == (int)__std_win_error::_Path_not_found)
+        if (e.code().value() == 2 || e.code().value() == 3)
             cerr << "Error: FlightDB is not exist, In this case for run this script you should scan for flightsScanner.sh or use reRun script." << endl;
-        else if (e.code().value() == (int)__std_win_error::_Access_denied)
+        else if (e.code().value() == 4)
         {
             cerr << "Error: Access Denied to FlightDB, check premissions." << endl;
             return false;
