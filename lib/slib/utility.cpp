@@ -58,7 +58,7 @@ void printFlightsByOrderFromAirport(const list<Airport>& airportsToPrint)
         {
             if (itrArv->get_arrival_time() < itrDst->get_departure_time())
             {
-                printArrivingFlightDetails(*itrArv);
+                printArrivingFlightDetailsFS(*itrArv);
                 ++itrArv;
             }
             else
@@ -69,7 +69,7 @@ void printFlightsByOrderFromAirport(const list<Airport>& airportsToPrint)
         }
         while (itrArv != itrArvEnd)
         {
-            printArrivingFlightDetails(*itrArv);
+            printArrivingFlightDetailsFS(*itrArv);
             ++itrArv;
         }
         while (itrDst != itrDstEnd)
