@@ -6,7 +6,7 @@ namespace fs = std::filesystem;
 int main(int argc, char** argv)
 {
     string airports;
-    string command = "/bin/bash -c ./flightDB.sh";
+    string command = "./flightScanner.sh";
     if (argc == 1)
     {
         string pathDB(argv[0]);
@@ -20,12 +20,13 @@ int main(int argc, char** argv)
     }
     else
     {
+        system("rm -r flightsDB");
         for (int i = 1; i < argc; ++i)
         {
             airports += ' ';
             airports += argv[i];
         }
     }
-    command =  command + ' ' +  airports;
+    command =  command +  airports;
     system(command.c_str());
 }
