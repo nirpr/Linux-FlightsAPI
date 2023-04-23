@@ -37,12 +37,12 @@ bool FlightDatabase::load_db(const string &dataBasePath, const string &airportCo
     }
     catch (const fs::filesystem_error& e)
     {
-        if (e.code().value() == (int)__std_win_error::_File_not_found || e.code().value() == (int)__std_win_error::_Path_not_found)
+        if (e.code().value() == 2 || e.code().value() == 3)
         {
             cerr << "Error: Airport " << airportCode << " not found in the Database." << endl;
             return false;
         }
-        else if (e.code().value() == (int)__std_win_error::_File_not_found)
+        else if (e.code().value() == 4)
         {
             cerr << "Error: Access Denied to " << airportCode << " from the Database" << endl;
             return false;
