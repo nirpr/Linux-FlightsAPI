@@ -7,4 +7,3 @@ Notes for assessment:
 - If there aren't any arrivals or departures from a certain airport then the program will delete the files .arv/.dst and if both are missing,
   it'll delete the airport directory.
 - after you'll enter "make clean" all the .out and .so and .o files will be deleted.
-- if you enter the command "make move" in the next time you will enter the "make" the .out files will be re-create. (nir check this sentence - maybe will be fix in different way)
