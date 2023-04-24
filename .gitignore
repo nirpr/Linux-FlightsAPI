@@ -1,8 +1,5 @@
 flightsDB/
 .vscode
-lib/build/
+lib/*.o
 libutilities.so
-full_schedule.out
-arrivals.out
-airplane.out
-rerun_script.out
+*.out

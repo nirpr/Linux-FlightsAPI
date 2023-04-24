@@ -12,7 +12,7 @@ int main(int argc, char** argv)
     string pathDB(argv[0]);
     set<string> airport_name_required;
     getDirectoryFromFile(pathDB);
-    pathDB += "\\flightsDB"; // adding flightsDB directory ("\\" for windows and "/" for linux)
+    pathDB += "/flightsDB"; // adding flightsDB directory ("\\" for windows and "/" for linux)
     for (int i = 1; i < argc; i++)
     {
         if( DB.load_db(pathDB, argv[i]) )
