@@ -1,14 +1,14 @@
-# Makefile for compiling C++ programs with a shared library
-.DEFAULT_GOAL := all
+# Makefile for compiling C++ flights programs with a shared library
+
 CXX = g++ # Compiler
 CXXFLAGS = -Werror -std=c++17  # Compiler flags
-#LDFLAGS =  -Wl,-rpath=`pwd` # Linker flags -Ilib/slib -Ilib
-LDFLAGS = -L. -Wl,-rpath=`pwd`
+LDFLAGS = -Wl,-rpath=`pwd`
 LIB = libutilities.so # Name of shared library
 
 # getting all programs with .cpp
 LIBDIR=lib
-SRCS := $(wildcard $(LIBDIR)/*.cpp) # Create list of srouces cpp files
+SRCS := $(wildcard $(LIBDIR)/*.cpp) # Create list of sources cpp files
+TARGET := $(patsubst $(LIBDIR)/%.cpp,%.out,$(SRCS)) # Create list of sources in target location
 
 # getting all utilities required for shared program
 SLIBDIR = $(LIBDIR)/slib
@@ -20,14 +20,12 @@ OBJS := $(patsubst %.cpp,%.out,$(SRCS))
 # for in the end of makefile .o files will not delete created OBJO
 OBJSO := $(patsubst %.cpp,%.o,$(SRCS)) 
 
-
-# Default target
-.PHONY: all move
-all: $(OBJS) $(OBJSO) move
+# Default targets
+all: $(TARGET) $(OBJSO)
 
 # Rule for create .out file -- Done
-%.out : %.o	$(LIB)
-	$(CXX) $^ -o $@ -L. $(LDFLAGS)
+%.out : $(LIBDIR)/%.o	$(LIB)  #
+	$(CXX) $^ $(LDFLAGS) -o $(patsubst $(LIBDIR)/%.out,%.out, $@)
 
 # Rule for compiling source filesSS
 %.o : %.cpp
@@ -35,13 +33,10 @@ all: $(OBJS) $(OBJSO) move
 
 # Rule for creating shared library
 $(LIB): $(UTILS) 
-	$(CXX) -shared -fPIC $^ $(LDFLAGS) -o $@ 
-# move the directory to parent directory
-ODIR := .
-move:
-	mv ./$(LIBDIR)/*.out $(ODIR)
-# # Clean up
-# clean:
-# 	find . -name "*.out" -exec rm -rf {} \;
-# 	find . -name "*.so" -exec rm -rf {} \;
-# 	find . -name "*.o" -exec rm -rf {} \;
+	$(CXX) -shared -fPIC $^ -o $@ 
+
+# Clean up
+clean:
+	find . -name "*.out" -exec rm -rf {} \;
+	find . -name "*.so" -exec rm -rf {} \;
+	find . -name "*.o" -exec rm -rf {} \;
