@@ -15,7 +15,8 @@ int main(int argc, char **argv)
     pathDB += "/flightsDB"; // adding flightsDB directory
     for(int i=1; i < argc;i++)
     {
-        try {
+        try 
+        {
             if(ICAOcodes.insert(argv[i]).second)
                 DB.load_db(pathDB, argv[i]); 
         }
@@ -28,26 +29,24 @@ int main(int argc, char **argv)
     printFlightsArrivalFromAirport(airportLst);
 }
 
+void printArrivingFlightDetails(const Flight& flight)
+{
+    cout << "Flight #" << flight.get_callsign() << " arriving from " <<
+        flight.get_origin() << ", took of at " << unix_time_to_date(flight.get_departure_time()) << "landed at " << unix_time_to_date(flight.get_arrival_time()) << endl;
+}
+
 void printFlightsArrivalFromAirport(const std::list<Airport>& airportsToPrint)
 {
     for (auto& airport : airportsToPrint)
     {
         list<Flight>::const_iterator itrArv = airport.get_flightsArv().begin();
         list<Flight>::const_iterator itrArvEnd = airport.get_flightsArv().end();
-        cout << airport.get_name() << ":" << endl;
         while (itrArv != itrArvEnd)
         {
+            cout << airport.get_name() << ": ";
             printArrivingFlightDetails(*itrArv);
             ++itrArv;
         }
     }
 }
 
-void printAirplaneFlightDetails(const Flight& flight)
-{
-    cout << flight.get_icao24() << " " << "departed from" << " " <<
-        flight.get_origin() << " " << "at" << " " <<
-        unix_time_to_date(flight.get_departure_time()) << " " << "arrived in" << " " <<
-        flight.get_destination() << " " << "at" << " " <<
-        unix_time_to_date(flight.get_arrival_time()) << endl;
-}

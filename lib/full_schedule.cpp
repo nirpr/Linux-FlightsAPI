@@ -39,7 +39,6 @@ void printFlightsByOrderFromAirport(const list<Airport>& airportsToPrint)
     cout << "Number of Airports to Report: " << airportsToPrint.size() << endl;
     for (auto& airport : airportsToPrint)
     {
-        cout << "Airport " << airport.get_name() << ":" << endl;
         // iterators to Begin of Flights Lists
         list<Flight>::const_iterator itrArv = airport.get_flightsArv().begin();
         list<Flight>::const_iterator itrDst = airport.get_flightsDpt().begin();
@@ -50,22 +49,26 @@ void printFlightsByOrderFromAirport(const list<Airport>& airportsToPrint)
         {
             if (itrArv->get_arrival_time() < itrDst->get_departure_time())
             {
+                cout << "Airport " << airport.get_name() << ": ";
                 printArrivingFlightDetailsFS(*itrArv);
                 ++itrArv;
             }
             else
             {
+                cout << "Airport " << airport.get_name() << ": ";
                 printDepartingFlightDetailsFS(*itrDst);
                 ++itrDst;
             }
         }
         while (itrArv != itrArvEnd)
         {
+            cout << "Airport " << airport.get_name() << ": ";
             printArrivingFlightDetailsFS(*itrArv);
             ++itrArv;
         }
         while (itrDst != itrDstEnd)
         {
+            cout << "Airport " << airport.get_name() << ": ";
             printDepartingFlightDetailsFS(*itrDst);
             ++itrDst;
         }

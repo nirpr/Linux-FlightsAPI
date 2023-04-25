@@ -16,16 +16,16 @@ int main(int argc, char** argv)
     pathDB += "/flightsDB"; // adding flightsDB directory ("\\" for windows and "/" for linux)
     try 
     {
-        try {
-            for (const auto& file_itr : fs::directory_iterator(pathDB))
-            {
-                string name = file_itr.path().filename().string();
-                DB.load_db(pathDB, file_itr.path().filename().string());
-            }
-        }
-        catch (const exception& e)
+        for (const auto& file_itr : fs::directory_iterator(pathDB))
         {
-            cerr << e.what() << endl;
+            try {
+            string name = file_itr.path().filename().string();
+            DB.load_db(pathDB, file_itr.path().filename().string());
+            }
+            catch (const exception& e)
+            {
+                cerr << e.what() << endl;
+            }
         }
     }
     catch (const fs::filesystem_error& e)
@@ -52,10 +52,13 @@ int main(int argc, char** argv)
     printFlightsByAirplanes(DB,argv,airplanes_amount);
 }
 
-void printArrivingFlightDetails(const Flight& flight)
+void printAirplaneFlightDetails(const Flight& flight)
 {
-    cout << "Flight #" << flight.get_callsign() << " arriving from " <<
-        flight.get_origin() << ", took of at " << unix_time_to_date(flight.get_departure_time()) << "landed at " << unix_time_to_date(flight.get_arrival_time()) << endl;
+    cout << flight.get_icao24() << " " << "departed from" << " " <<
+        flight.get_origin() << " " << "at" << " " <<
+        unix_time_to_date(flight.get_departure_time()) << " " << "arrived in" << " " <<
+        flight.get_destination() << " " << "at" << " " <<
+        unix_time_to_date(flight.get_arrival_time()) << endl;
 }
 
 void printFlightsByAirplanes(const FlightDatabase& DB, char** argv ,int airplanes_amount)

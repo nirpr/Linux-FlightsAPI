@@ -16,9 +16,9 @@ bool FlightDatabase::load_db(const string &dataBasePath, const string &airportCo
         {
             try
             {
-                if (itr.path().extension().string() == ".arv")
+                if (itr.path().extension().string().compare(".arv") == 0)
                     arv = true;
-                else if (itr.path().extension().string() == ".dpt")
+                else if (itr.path().extension().string().compare(".dst") == 0)
                     dst = true;
                 load_flights_to_DB(itr, airportCode);
             }
@@ -29,11 +29,11 @@ bool FlightDatabase::load_db(const string &dataBasePath, const string &airportCo
         }
         if (arv == false)
         {
-            errors += string("There are no arrivals to ") += string(airportCode) += " Airport.\n";
+            errors += string("INFO: There are no arrivals to ") += string(airportCode) += " Airport.\n";
         }
-        if (arv == false)
+        if (dst == false)
         {
-            errors += string("There are no departures to ") += string(airportCode) += " Airport.\n";
+            errors += string("INFO: There are no departures to ") += string(airportCode) += " Airport.\n";
         }
     }
     catch (const fs::filesystem_error& e)
