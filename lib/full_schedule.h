@@ -5,7 +5,8 @@
 #include <set>
 #include "slib/utility.h"
 
-void printArrivingFlightDetails(const Flight& flight);
-void printDepartingFlightDetails(const Flight& flight);
+void printArrivingFlightDetailsFS(const Flight& flight);
+void printDepartingFlightDetailsFS(const Flight& flight);
+void printFlightsByOrderFromAirport(const std::list<Airport>& airportsToPrint);
 
 #endif

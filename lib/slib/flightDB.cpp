@@ -5,32 +5,99 @@ namespace fs = std::filesystem;
 bool FlightDatabase::load_db(const string &dataBasePath, const string &airportCode) noexcept(false)
 {
     string airportPathDB(dataBasePath); 
-    // adding flightsDB directory ("\\" for windows and "/" for linux)
+    // adding flightsDB directory
     airportPathDB.append("/").append(airportCode); // Add to path .../airportCode // Folder Path
     bool arv = false, dst = false;
-    for(const auto& itr : fs::directory_iterator(airportPathDB))
+    string errors;
+    try
     {
-        try
-        {   
-            if (itr.path().extension().string() == ".arv")
-                arv = true;
-            else if (itr.path().extension().string() == ".dpt")
-                dst = true;
-            load_flights_to_DB(itr, airportCode);
-        }
-        catch(const std::exception& e)
+        fs::directory_iterator dict_itr(airportPathDB);
+        for (const auto& itr : dict_itr)
         {
-            cerr << e.what() << " " << itr.path().filename().string() << " from database" << endl;
+            try
+            {
+                if (itr.path().extension().string().compare(".arv") == 0)
+                    arv = true;
+                else if (itr.path().extension().string().compare(".dst") == 0)
+                    dst = true;
+                load_flights_to_DB(itr, airportCode);
+            }
+            catch (const std::logic_error& e)
+            {
+                errors += string(e.what()).append(" ") += itr.path().filename().string() += " from database\n";
+            }
+        }
+        if (arv == false)
+        {
+            errors += string("INFO: There are no arrivals to ") += string(airportCode) += " Airport.\n";
+        }
+        if (dst == false)
+        {
+            errors += string("INFO: There are no departures to ") += string(airportCode) += " Airport.\n";
         }
     }
-    if (arv == false)
+    catch (const fs::filesystem_error& e)
     {
-        cerr << "There are no arrivals to " << airportCode << " Airport." << endl;
+        if (e.code().value() == (int)std_error::_File_not_found || e.code().value() == (int)std_error::_Path_not_found)
+        {
+            errors += string("Error: Airport ") += string(airportCode) += " not found in the Database. \n";
+            throw runtime_error(errors);
+        }
+        else if (e.code().value() == (int)std_error::_Access_denied)
+        {
+            errors += string("Error: Access Denied to ") += string(airportCode) += " from the Database. \n";
+            throw runtime_error(errors);
+        }
+        else
+        {
+            errors += string("Error: Unknown error in reading ") += string(airportCode) += " from the Database. \n" ;
+            throw runtime_error(errors);
+
+        }
     }
-    if (arv == false)
+    if( !arv || !dst )
+        throw runtime_error(errors);
+    return true;
+}
+
+bool FlightDatabase::load_flights_to_DB(const fs::directory_entry& file, const std::string& airportCode) noexcept(false)
+{
+    ifstream inFile;
+    inFile.open(file.path().string(), ios::in);
+    if (inFile.is_open())
     {
-        cerr << "There are no departures to " << airportCode << " Airport." << endl;
+        string dummyString;
+        getline(inFile, dummyString);   // skip first line
     }
+    else 
+    {
+        inFile.close();
+        throw logic_error("Error: Something gone wrong in the try to read, ");
+    }
+    list<Flight> flights;
+    try
+    {
+        getFlightsFromFiles(inFile, flights);
+        if (!this->get_airports_names().count(airportCode))
+            this->Airports.push_back(Airport(airportCode));
+        for (auto& flight : flights)
+            if (file.path().extension() == ".arv")
+                this->Airports.back().add_flightArv(flight);
+            else if (file.path().extension() == ".dst")
+                this->Airports.back().add_flightDpt(flight);
+            else
+            {
+                inFile.close();
+                throw logic_error("Error: file suffix without handling, ");  
+            }
+        this->Airports.back().changeDataLoadStatus(true);
+    }
+    catch (const std::exception& e)
+    {
+        inFile.close();
+        throw e;
+    }
+    inFile.close();
     return true;
 }
 
@@ -91,51 +158,10 @@ const set<Flight> FlightDatabase::getAirplanes(const set<string>& icao24_require
     return flights;
 }
 
-bool FlightDatabase::load_flights_to_DB(const fs::directory_entry& file, const std::string& airportCode) noexcept(false)
-{
-    ifstream inFile;
-    inFile.open(file.path().string(), ios::in);
-    if (inFile.is_open())
-    {
-        string dummyString;
-        getline(inFile, dummyString);   // skip first line
-    }
-    else 
-    {
-        inFile.close();
-        throw logic_error("Error: Something gone wrong in the try to read,");
-    }
-    list<Flight> flights;
-    try
-    {
-        getFlightsFromFiles(inFile, flights);
-        if (!this->get_airports_names().count(airportCode))
-            this->Airports.push_back(Airport(airportCode));
-        for (auto& flight : flights)
-            if (file.path().extension() == ".arv")
-                this->Airports.back().add_flightArv(flight);
-            else if (file.path().extension() == ".dst")
-                this->Airports.back().add_flightDpt(flight);
-            else
-            {
-                inFile.close();
-                throw logic_error("Error: file suffix without handling,");  
-            }
-        this->Airports.back().changeDataLoadStatus(true);
-    }
-    catch (const std::exception& e)
-    {
-        inFile.close();
-        throw e;
-    }
-    inFile.close();
-    return true;
-}
-
 void FlightDatabase::getFlightsFromFiles(ifstream& inFile, list<Flight>& flights) noexcept(false)
 {
     if(!inFile.is_open())
-        throw logic_error("Error: Something gone wrong in try to reading the file.");
+        throw logic_error("Error: Something gone wrong in try to reading the file. ");
     string line;
     string icao24, callsign, origin, destination, departure_time, arrival_time;
     while(getline(inFile, line))
