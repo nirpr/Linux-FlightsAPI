@@ -12,8 +12,9 @@ int main(int argc, char** argv)
         string pathDB(argv[0]);
         getDirectoryFromFile(pathDB);
         int airplanes_amount = argc - 1;
-        pathDB += "/flightsDB"; // adding flightsDB directory ("\\" for windows and "/" for linux)
-        try {
+        pathDB += "/flightsDB"; // adding flightsDB directory
+        try 
+        {
             for (const auto& file_itr : fs::directory_iterator(pathDB))
             {
                 airports = airports + ' ' + file_itr.path().filename().string();
@@ -21,9 +22,9 @@ int main(int argc, char** argv)
         }
         catch (const fs::filesystem_error& e)
         {
-            if(e.code().value() == 2 || e.code().value() == 3)
+            if(e.code().value() == (int)std_error::_File_not_found || e.code().value() == (int)std_error::_Path_not_found)
                 cerr << "Error: FlightDB is not exist, In this case for run this script and load database need to enter paramaters." << endl;
-            else if (e.code().value() == 5)
+            else if (e.code().value() == (int)std_error::_Access_denied)
             {
                 cerr << "Error: Access Denied to FlightDB, check premissions." << endl;
                 return false;
@@ -32,6 +33,11 @@ int main(int argc, char** argv)
             {
                 cerr << "Error: Unknown error in reading data from Database" << endl;
             }
+            return EXIT_FAILURE;
+        }
+        catch (const exception& e)
+        {
+            cerr << e.what();
             return EXIT_FAILURE;
         }
     }
@@ -46,4 +52,5 @@ int main(int argc, char** argv)
     }
     command =  command +  airports;
     system(command.c_str());
+    return EXIT_SUCCESS;
 }
