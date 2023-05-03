@@ -1,4 +1,5 @@
-# Interface to print flights details from OpenSky Network, the project was created and meant to run on a Linux environment.
+# Interface to print flights details from OpenSky Network
+the project was created and meant to run on a Linux environment.
 by: Omer Kriger, Or Segal, Nir Peretz.
 
 STEPS for using:
