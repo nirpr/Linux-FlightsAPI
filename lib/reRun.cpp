@@ -3,7 +3,7 @@
 using namespace std;
 namespace fs = std::filesystem;
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
     string airports;
     string command = "./flightScanner.sh";
@@ -13,16 +13,16 @@ int main(int argc, char** argv)
         getDirectoryFromFile(pathDB);
         int airplanes_amount = argc - 1;
         pathDB += "/flightsDB"; // adding flightsDB directory
-        try 
+        try
         {
-            for (const auto& file_itr : fs::directory_iterator(pathDB))
+            for (const auto &file_itr : fs::directory_iterator(pathDB))
             {
                 airports = airports + ' ' + file_itr.path().filename().string();
             }
         }
-        catch (const fs::filesystem_error& e)
+        catch (const fs::filesystem_error &e)
         {
-            if(e.code().value() == (int)std_error::_File_not_found || e.code().value() == (int)std_error::_Path_not_found)
+            if (e.code().value() == (int)std_error::_File_not_found || e.code().value() == (int)std_error::_Path_not_found)
                 cerr << "Error: FlightDB is not exist, In this case for run this script and load database need to enter paramaters." << endl;
             else if (e.code().value() == (int)std_error::_Access_denied)
             {
@@ -35,7 +35,7 @@ int main(int argc, char** argv)
             }
             return EXIT_FAILURE;
         }
-        catch (const exception& e)
+        catch (const exception &e)
         {
             cerr << e.what();
             return EXIT_FAILURE;
@@ -43,14 +43,14 @@ int main(int argc, char** argv)
     }
     else
     {
-        system("rm -r flightsDB"); 
+        system("rm -r flightsDB");
         for (int i = 1; i < argc; ++i)
         {
             airports += ' ';
             airports += argv[i];
         }
     }
-    command =  command +  airports;
+    command = command + airports;
     system(command.c_str());
     return EXIT_SUCCESS;
 }
