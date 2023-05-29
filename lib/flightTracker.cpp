@@ -2,6 +2,7 @@
 #include "slib/utility.h"
 #include <csignal>
 #include <iostream>
+#include <limits.h> // used for get PIPE_BUFF
 #include <stdio.h>
 #include <string>
 #include <sys/wait.h>
@@ -11,6 +12,7 @@ using namespace std;
 // defines
 #define READ_END 0
 #define WRITE_END 1
+#define CHUNK_SIZE PIPE_BUF
 
 // Function Declerations
 void printOptions();
@@ -270,10 +272,10 @@ int receiveTaskFromParent(int pipeRead)
 string receiveResults(int pipeRead)
 {
     string results;
-    char buffer[4096];
+    char buffer[CHUNK_SIZE];
     while (true)
     {
-        ssize_t bytesRead = read(pipeRead, buffer, sizeof(buffer));
+        ssize_t bytesRead = read(pipeRead, buffer, CHUNK_SIZE);
         if (bytesRead == 0)
             break;
         if (bytesRead == -1)
@@ -281,7 +283,7 @@ string receiveResults(int pipeRead)
             std::cerr << "Failed to receive result." << std::endl;
             // TODO: Graceful exit
         }
-        results += buffer;
+        results += buffer; // Append the string and continue to read till fd is empty
     }
     return results;
 }
