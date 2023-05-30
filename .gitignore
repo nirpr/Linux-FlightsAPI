@@ -3,3 +3,5 @@ flightsDB/
 lib/*.o
 libutilities.so
 *.out
+--library=zip
+flightsDB.zip

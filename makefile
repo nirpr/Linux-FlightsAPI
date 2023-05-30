@@ -1,8 +1,8 @@
 # Makefile for compiling C++ flights programs with a shared library
 
 CXX = g++ # Compiler
-CXXFLAGS = -Werror -std=c++17  # Compiler flags
-LDFLAGS = -Wl,-rpath=`pwd`
+CXXFLAGS = -Werror -std=c++17 # Compiler flags
+LDFLAGS = -Wl,-rpath=`pwd` -lzip
 LIB = libutilities.so # Name of shared library
 
 # getting all programs with .cpp
