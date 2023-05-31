@@ -16,13 +16,13 @@ using namespace std;
 
 // Function Declerations
 void printOptions();
-void pipeCleanUp(int parentToChild[2], int childToParent[2]);
+void pipeCleanUp(int parentToChild[2], int childToParent[2], int childToParentError[2]);
 int getUserDecision(int startRange, int endRange, int maxTimes);
 void signalHandlerParent(int signal_number);
 void signalHandlerChild(int signal_number);
-int LogicProcess(pid_t &pid, int parentToChild[2], int childToParent[2]);
-int OptionsHandler(int OpCode, int parentToChild[2], int childToParent[2], pid_t &pid);
-int UserInterface(pid_t &pid, int parentToChild[2], int childToParent[2]);
+int LogicProcess(pid_t &pid, int parentToChild[2], int childToParent[2], int childToParentError[2]);
+int OptionsHandler(int OpCode, int parentToChild[2], int childToParent[2], int childToParentError[2], pid_t &pid);
+int UserInterface(pid_t &pid, int parentToChild[2], int childToParent[2], int childToParentError[2]);
 bool sendTaskToChild(int parentToChild, int OpCode);
 int receiveTaskFromParent(int childToParent);
 string receiveResults(int parentToChild);
@@ -52,8 +52,8 @@ int main(int argc, char **argv)
 {
     cout << "Program is starting" << endl;
     // ---- First Pipe setup ----
-    int parentToChild[2] = {0, 0}, childToParent[2] = {0, 0}; // create pipes for communication
-    if (pipe(parentToChild) == -1 || pipe(childToParent) == -1)
+    int parentToChild[2] = {0, 0}, childToParent[2] = {0, 0}, childToParentError[2] = {0, 0}; // create pipes for communication
+    if (pipe(parentToChild) == -1 || pipe(childToParent) == -1 || pipe(childToParentError) == -1)
     {
         cerr << "Failed to create pipe." << endl;
         return EXIT_FAILURE;
@@ -61,63 +61,86 @@ int main(int argc, char **argv)
     // ---- Pipe setup End ----
 
     // Fork the process to Parent and Child
+    pid_t pid = -1;
+    int returnedStatus;
     try
     {
-        pid_t pid = -1;
-        int returnedStatus;
         pid = fork();
         if (pid > 0) // Parent
         {
             // Parent Pipe Setup Continue
-            close(parentToChild[READ_END]);  // Parent dont read from this pipe
-            close(childToParent[WRITE_END]); // Parent dont write to this pipe
+            close(parentToChild[READ_END]);       // Parent dont read from this pipe
+            close(childToParent[WRITE_END]);      // Parent dont write to this pipe
+            close(childToParentError[WRITE_END]); // Parent dont write to this pipe
+
             // Parent Signals Setup
-            signal(SIGINT, signalHandlerParent);                               // Register SIGINT of parent
-            signal(SIGUSR1, signalHandlerParent);                              // Register SIGUSR1 of parent
-            returnedStatus = UserInterface(pid, parentToChild, childToParent); // Handle UI
-            pipeCleanUp(parentToChild, childToParent);                         // Close the pipes between Parent and Child}
+            signal(SIGINT, signalHandlerParent); // Register SIGINT of parent
+
+            // UI - Parent Handling
+            returnedStatus = UserInterface(pid, parentToChild, childToParent, childToParentError); // Handle UI
+            pipeCleanUp(parentToChild, childToParent, childToParentError);                         // Close the pipes between Parent and Child}
             return returnedStatus;
         }
         else if (pid == 0) // Child
         {
             // Child Pipe Setup Continue
-            close(parentToChild[WRITE_END]); // Child dont write to this pipe
-            close(childToParent[READ_END]);  // Child dont read from this pipe
+            close(parentToChild[WRITE_END]);     // Child dont write to this pipe
+            close(childToParent[READ_END]);      // Child dont read from this pipe
+            close(childToParentError[READ_END]); // Parent dont write to this pipe
+
             // Child Signals Setup
-            signal(SIGINT, signalHandlerChild);                               // Register SIGINT of Child
-            signal(SIGUSR1, signalHandlerChild);                              // Register SIGUSR1 of Child
-            returnedStatus = LogicProcess(pid, parentToChild, childToParent); // Handle Task and logics from Parent
-            pipeCleanUp(parentToChild, childToParent);                        // Close the pipes between Parent and Child}
+            signal(SIGUSR1, signalHandlerChild); // Register SIGUSR1 of Child
+
+            // Logic Process - Child Handling
+            returnedStatus = LogicProcess(pid, parentToChild, childToParent, childToParentError); // Handle Task and logics from Parent
+            pipeCleanUp(parentToChild, childToParent, childToParentError);                        // Close the pipes between Parent and Child}
             return returnedStatus;
         }
-        else // TODO: Fork failed handle
+        else // Fork failed handle
         {
             cerr << "Failed to create child process." << endl;
             return EXIT_FAILURE;
         }
     }
-    catch (const exception &e)
+    catch (const exception &e) // Exit for critical Error that didn't have any specific handle case
     {
         cerr << e.what() << endl;
-        exit(EXIT_FAILURE);
+        if (pid > 0) // Parent
+        {
+            // TODO: Maybe add check if child is alive and make graceful exit for child before exit.
+        }
+        else if (pid == 0)
+        {
+            // TODO: Graceful exit
+        }
+        else
+        {
+            exit(EXIT_FAILURE);
+        }
     }
 }
 
-int LogicProcess(pid_t &pid, int parentToChild[2], int childToParent[2]) noexcept(false) // TODO: Need to handle Functional Logics and pipelines and signals
+int LogicProcess(pid_t &pid, int parentToChild[2], int childToParent[2], int childToParentError[2]) noexcept(false) // TODO: need to handle Functional Logics and pipelines and signals
 {
     bool Running = true;
     cout << "Fork created [Process id: " << getpid() << ", [parent process id: " << getppid() << "]." << endl;
-    FlightDatabase flightDB(true);
-    cout << "loadStatus: " << (int)flightDB.getLoadStatus() << "sizeof: " << sizeof(flightDB) << endl;
-    // while (Running)
-    // {
+    try
+    {
+        FlightDatabase flightDB(true);
+        // while (Running)
+        // {
+        //     // TODO: Child Logic
+        // }
+    }
+    catch (const exception &e)
+    {
+        cerr << e.what() << endl;
+    }
 
-    //     // TODO: Child Logic
-    // }
-    return 0; // for now
+    return 0;
 }
 
-int UserInterface(pid_t &pid, int parentToChild[2], int childToParent[2]) noexcept(false) // TODO: Need to handle UI Logic and pipelines and signals
+int UserInterface(pid_t &pid, int parentToChild[2], int childToParent[2], int childToParentError[2]) noexcept(false) // TODO: Need to handle UI Logic and pipelines and signals
 {
     cout << "This is parent section [Process id: " << getpid() << "] , [child's id: " << pid << " ]." << endl;
     bool Running = true;
@@ -129,23 +152,27 @@ int UserInterface(pid_t &pid, int parentToChild[2], int childToParent[2]) noexce
                                      (int)ProgramSettings::optionEndRange,
                                      (int)ProgramSettings::MaxInputAttempts);
         // TODO: Handle userChoice and tranfer it to the Child process with pipeline in OptionsHandler
-        OptionsHandler(userChoice, parentToChild, childToParent, pid);
+        OptionsHandler(userChoice, parentToChild, childToParent, childToParentError, pid);
         // TODO: Wait for response from the Child process and get from pipeline the results
         if (userChoice == (int)Menu::Exit)
             Running = false;
     }
-    return 0; // for now
+    return 0;
 }
 
-void pipeCleanUp(int parentToChild[2], int childToParent[2])
+void pipeCleanUp(int parentToChild[2], int childToParent[2], int childToParentError[2])
 {
-    // Close Parent Pipes
+    // Close Parent to Child - IO Pipe
     close(parentToChild[READ_END]);
     close(parentToChild[WRITE_END]);
 
-    // Close Child Pipes
+    // Close Child to Parent - IO Pipe
     close(childToParent[READ_END]);
     close(childToParent[WRITE_END]);
+
+    // Close Child to Parent - Error Pipe
+    close(childToParentError[READ_END]);
+    close(childToParentError[WRITE_END]);
 }
 
 void signalHandlerParent(int signal_number) // TODO: need to handle signals
@@ -235,7 +262,7 @@ int getUserDecision(int startRange, int endRange, int maxTimes)
     return UserDecision;
 }
 
-int OptionsHandler(int OpCode, int parentToChild[2], int childToParent[2], pid_t &pid) // TODO: Finish Handling logics for parents
+int OptionsHandler(int OpCode, int parentToChild[2], int childToParent[2], int childToParentError[2], pid_t &pid) // TODO: Finish Handling logics for parents
 {
     string results;
     switch (OpCode)

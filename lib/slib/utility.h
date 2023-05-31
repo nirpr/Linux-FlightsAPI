@@ -3,10 +3,10 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "flightDB.h"
 #include <ctime>
-#include <string>
 #include <sstream>
+#include <string>
 
-void getDirectoryFromFile(std::string& filePath);
-std::string unix_time_to_date(const time_t& unix_time);
+void getDirectoryFromFile(std::string &filePath);
+std::string unix_time_to_date(const time_t &unix_time);
 
 #endif

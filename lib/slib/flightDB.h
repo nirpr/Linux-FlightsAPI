@@ -9,11 +9,12 @@
 #include <set>
 #include <sstream> // Require for stringstream
 #include <stdexcept>
-#include <sys/stat.h> // Required for functions in Linux
+#include <sys/stat.h>   // Required for functions in Linux
+#include <system_error> // ERROR CODES
 #include <zip.h>
 
 #define DB_PATH "./flightsDB"
-
+#define DB_PREMISSIONS S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH
 enum class std_error : unsigned long
 {
     _Success = 0,                     // #define ERROR_SUCCESS                    0L

@@ -133,6 +133,6 @@ int main(int argc, char *argv[])
 {
     mode_t permissions = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH; // permissions: read for all, write only for user.
     // zipFlightsDB();
-    unzipFlightsDB(permissions);
+    zipFlightsDB();
     return 0;
 }
