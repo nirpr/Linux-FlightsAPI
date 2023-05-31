@@ -8,7 +8,7 @@ int main(int argc, char **argv)
         cerr << "Error: arguments didn't send." << endl;
         return EXIT_FAILURE;
     }
-    FlightDatabase DB;
+    FlightDatabase DB(false);
     string pathDB(argv[0]);
     getDirectoryFromFile(pathDB);
     pathDB += "/flightsDB";

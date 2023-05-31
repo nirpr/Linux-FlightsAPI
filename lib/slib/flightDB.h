@@ -55,15 +55,15 @@ class FlightDatabase
         destinations,
         both
     };
-    FlightDatabase(bool loadfromZip = true) noexcept(false);
-    bool load_DB_from_folder() noexcept(false);
+    FlightDatabase(bool loadfromZip) noexcept(false);
+    void load_DB_from_folder() noexcept(false);
     bool load_db(const std::string &airportCode) noexcept(false);
     const std::list<Airport> get_flights_by_airport_name(const std::set<std::string> &airport_name, int ToFromBoth) const;
     std::set<std::string> get_airports_names() const;
     const std::set<Flight> getAirplanes(const std::string &icao24) const;
     const std::set<Flight> getAirplanes(const std::set<std::string> &icao24_required) const;
-    static void zipDB() noexcept(false);
     static void unzipDB() noexcept(false);
+    static void zipDB() noexcept(false);
     static void writeStringToFile(const std::string &str, const std::string &fileName, mode_t permissions) noexcept(false);
     // getter
     bool getLoadStatus() { return loaded; }

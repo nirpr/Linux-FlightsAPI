@@ -3,13 +3,13 @@ using namespace std;
 namespace fs = std::filesystem;
 
 // Methods
-FlightDatabase::FlightDatabase(bool loadfromZip = true) noexcept(false) : loaded(false)
+FlightDatabase::FlightDatabase(bool loadfromZip) noexcept(false) : loaded(false)
 {
     if (loadfromZip)
     {
         try
         {
-            unzipDB();
+            FlightDatabase::unzipDB();
             load_DB_from_folder();
             loaded = true;
         }
@@ -22,7 +22,7 @@ FlightDatabase::FlightDatabase(bool loadfromZip = true) noexcept(false) : loaded
     }
 }
 
-bool FlightDatabase::load_DB_from_folder() noexcept(false)
+void FlightDatabase::load_DB_from_folder() noexcept(false)
 {
     for (const auto &file_itr : fs::directory_iterator(DB_PATH))
         load_db(file_itr.path().filename().string());
@@ -204,7 +204,7 @@ void FlightDatabase::getFlightsFromFiles(ifstream &inFile, list<Flight> &flights
     }
 }
 
-static void zipDB() noexcept(false) // TODO: Exceptions from cerr
+void FlightDatabase::zipDB() noexcept(false) // TODO: Exceptions from cerr
 {
     const string zipFileName = "./flightsDB.zip";
     // Check if FlightsDB folder exists
@@ -253,8 +253,7 @@ static void zipDB() noexcept(false) // TODO: Exceptions from cerr
     if (zip_close(archive) == -1)
         cerr << "flightsDB has not been zipped !" << endl;
 }
-
-static void unzipDB() noexcept(false) // TODO: Exceptions from cerr
+void FlightDatabase::unzipDB() noexcept(false) // TODO: Exceptions from cerr
 {
     const string zipFileName(DB_PATH, ".zip");
     // Check if FlightsDB folder exists
@@ -268,7 +267,7 @@ static void unzipDB() noexcept(false) // TODO: Exceptions from cerr
     zip_t *archive = zip_open(zipFileName.c_str(), ZIP_CREATE | ZIP_TRUNCATE, NULL);
     if (!archive)
     {
-        cerr << "Failed to create the zip archive." << endl;
+        cerr << "Failed to open the zip archive." << endl;
         return;
     }
 
@@ -304,7 +303,7 @@ static void unzipDB() noexcept(false) // TODO: Exceptions from cerr
         cerr << "flightsDB has not been zipped !" << endl;
 }
 
-void writeStringToFile(const string &str, const string &fileName, mode_t permissions) // TODO: Change to exceptions
+void FlightDatabase::writeStringToFile(const string &str, const string &fileName, mode_t permissions) // TODO: Change to exceptions
 {
     fs::create_directories(fs::path(fileName).parent_path()); // create directories if isn't exist
     ofstream file(fileName, ios::trunc);

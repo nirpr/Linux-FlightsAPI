@@ -107,13 +107,14 @@ int LogicProcess(pid_t &pid, int parentToChild[2], int childToParent[2]) noexcep
 {
     bool Running = true;
     cout << "Fork created [Process id: " << getpid() << ", [parent process id: " << getppid() << "]." << endl;
-    FlightDatabase flightDB;
+    FlightDatabase flightDB(true);
     cout << "loadStatus: " << (int)flightDB.getLoadStatus() << "sizeof: " << sizeof(flightDB) << endl;
     // while (Running)
     // {
 
     //     // TODO: Child Logic
     // }
+    return 0; // for now
 }
 
 int UserInterface(pid_t &pid, int parentToChild[2], int childToParent[2]) noexcept(false) // TODO: Need to handle UI Logic and pipelines and signals
@@ -133,6 +134,7 @@ int UserInterface(pid_t &pid, int parentToChild[2], int childToParent[2]) noexce
         if (userChoice == (int)Menu::Exit)
             Running = false;
     }
+    return 0; // for now
 }
 
 void pipeCleanUp(int parentToChild[2], int childToParent[2])
@@ -259,6 +261,7 @@ int OptionsHandler(int OpCode, int parentToChild[2], int childToParent[2], pid_t
             // TODO: Graceful Exit
             break;
     }
+    return 0;
 }
 
 bool sendTaskToChild(int parentToChild, int OpCode)
