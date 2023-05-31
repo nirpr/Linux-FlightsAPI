@@ -7,10 +7,12 @@
 #include <fstream>
 #include <iostream>
 #include <set>
-#include <sstream>
+#include <sstream> // Require for stringstream
 #include <stdexcept>
-#include <vector>
+#include <sys/stat.h> // Required for functions in Linux
 #include <zip.h>
+
+#define DB_PATH "./flightsDB"
 
 enum class std_error : unsigned long
 {
@@ -53,14 +55,18 @@ class FlightDatabase
         destinations,
         both
     };
-    FlightDatabase() : loaded(false) {}
-    bool load_db(const std::string &dataBasePath, const std::string &airportCode);
+    FlightDatabase(bool loadfromZip = true) noexcept(false);
+    bool load_DB_from_folder() noexcept(false);
+    bool load_db(const std::string &airportCode) noexcept(false);
     const std::list<Airport> get_flights_by_airport_name(const std::set<std::string> &airport_name, int ToFromBoth) const;
     std::set<std::string> get_airports_names() const;
     const std::set<Flight> getAirplanes(const std::string &icao24) const;
     const std::set<Flight> getAirplanes(const std::set<std::string> &icao24_required) const;
-    static void zipDB(const std::string &flightsDBFolder) noexcept(false);
-    static void unzipDB(const std::string &flightsDBFolder) noexcept(false);
+    static void zipDB() noexcept(false);
+    static void unzipDB() noexcept(false);
+    static void writeStringToFile(const std::string &str, const std::string &fileName, mode_t permissions) noexcept(false);
+    // getter
+    bool getLoadStatus() { return loaded; }
 
         private:
     void getFlightsFromFiles(std::ifstream &inFile, std::list<Flight> &flights) noexcept(false);

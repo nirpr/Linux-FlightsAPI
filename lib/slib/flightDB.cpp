@@ -2,9 +2,35 @@
 using namespace std;
 namespace fs = std::filesystem;
 
-bool FlightDatabase::load_db(const string &dataBasePath, const string &airportCode) noexcept(false)
+// Methods
+FlightDatabase::FlightDatabase(bool loadfromZip = true) noexcept(false) : loaded(false)
 {
-    string airportPathDB(dataBasePath);
+    if (loadfromZip)
+    {
+        try
+        {
+            unzipDB();
+            load_DB_from_folder();
+            loaded = true;
+        }
+        catch (const fs::filesystem_error &e)
+        {
+            // if the folder is not exist is don't do anything.
+            if (!(e.code().value() == (int)std_error::_File_not_found || e.code().value() == (int)std_error::_Path_not_found))
+                throw e;
+        }
+    }
+}
+
+bool FlightDatabase::load_DB_from_folder() noexcept(false)
+{
+    for (const auto &file_itr : fs::directory_iterator(DB_PATH))
+        load_db(file_itr.path().filename().string());
+}
+
+bool FlightDatabase::load_db(const string &airportCode) noexcept(false)
+{
+    string airportPathDB(DB_PATH);
     // adding flightsDB directory
     airportPathDB.append("/").append(airportCode); // Add to path .../airportCode // Folder Path
     bool arv = false, dst = false;
@@ -178,26 +204,120 @@ void FlightDatabase::getFlightsFromFiles(ifstream &inFile, list<Flight> &flights
     }
 }
 
-static void zipDB(const std::string &flightsDBpath) noexcept(false)
+static void zipDB() noexcept(false) // TODO: Exceptions from cerr
 {
-    const std::string flightsDBFolder = "FlightsDB";
-    const std::string zipFileName = "FlightsDB.zip";
-    if (!fs::is_directory(flightsDBFolder)) // check if path is a folder.
-        throw fs::filesystem_error::runtime_error("FlightsDB folder not found.");
-    zip_t *archive = zip_open(flightsDBFolder.c_str(), ZIP_CREATE | ZIP_TRUNCATE, NULL);
-    if (!archive) // check if zip created.
-        throw fs::filesystem_error::runtime_error("Failed to create the zip archive.");
+    const string zipFileName = "./flightsDB.zip";
+    // Check if FlightsDB folder exists
+    if (!fs::is_directory(DB_PATH))
+    {
+        cerr << "FlightsDB folder not found." << endl;
+        return;
+    }
+
+    // Create a new zip archive
+    zip_t *archive = zip_open(zipFileName.c_str(), ZIP_CREATE | ZIP_TRUNCATE, NULL);
+    if (!archive)
+    {
+        cerr << "Failed to create the zip archive." << endl;
+        return;
+    }
 
     // Iterate over airport folders in FlightsDB
-    for (const auto &entry : fs::directory_iterator(flightsDBFolder))
+    for (const auto &entry : fs::directory_iterator(DB_PATH))
     {
-        if (entry.is_directory()) // check if is a folder.
+        if (entry.is_directory())
         {
             string airportCode = entry.path().filename().string();
-            string airportFolderPath = flightsDBFolder + "/" + airportCode;
+            string airportFolderPath = "flightsDB/" + airportCode;
+            for (const auto &airportEntry : fs::directory_iterator(airportFolderPath))
+            {
+                string fileName = airportEntry.path().filename().string();
+                string filePath = airportFolderPath + "/" + fileName;
+
+                zip_source_t *source = zip_source_file(archive, filePath.c_str(), 0, -1); // create zip_source from file text
+                if (!source)                                                              // Error if can't create zip source
+                {
+                    cerr << "Error: create zip source for file " << fileName << endl;
+                    continue;
+                }
+                zip_int64_t error = zip_file_add(archive, filePath.c_str(), source, ZIP_FL_ENC_UTF_8); // adding the source to the zip file
+                if (error == -1)                                                                       // Error if can't add from zip source
+                {
+                    cerr << "Error: add file " << fileName << " to zip archive " << endl;
+                    zip_source_free(source);
+                    continue;
+                }
+            }
         }
     }
+    if (zip_close(archive) == -1)
+        cerr << "flightsDB has not been zipped !" << endl;
 }
-static void unzipDB(const std::string &flightsDBFolder) noexcept(false)
+
+static void unzipDB() noexcept(false) // TODO: Exceptions from cerr
 {
+    const string zipFileName(DB_PATH, ".zip");
+    // Check if FlightsDB folder exists
+    if (!fs::is_directory(DB_PATH))
+    {
+        cerr << "FlightsDB folder not found." << endl;
+        return;
+    }
+
+    // Create a new zip archive
+    zip_t *archive = zip_open(zipFileName.c_str(), ZIP_CREATE | ZIP_TRUNCATE, NULL);
+    if (!archive)
+    {
+        cerr << "Failed to create the zip archive." << endl;
+        return;
+    }
+
+    // Iterate over airport folders in FlightsDB
+    for (const auto &entry : fs::directory_iterator(DB_PATH))
+    {
+        if (entry.is_directory())
+        {
+            string airportCode = entry.path().filename().string();
+            string airportFolderPath = "flightsDB/" + airportCode;
+            for (const auto &airportEntry : fs::directory_iterator(airportFolderPath))
+            {
+                string fileName = airportEntry.path().filename().string();
+                string filePath = airportFolderPath + "/" + fileName;
+
+                zip_source_t *source = zip_source_file(archive, filePath.c_str(), 0, -1); // create zip_source from file text
+                if (!source)                                                              // Error if can't create zip source
+                {
+                    cerr << "Error: create zip source for file " << fileName << endl;
+                    continue;
+                }
+                zip_int64_t error = zip_file_add(archive, filePath.c_str(), source, ZIP_FL_ENC_UTF_8); // adding the source to the zip file
+                if (error == -1)                                                                       // Error if can't add from zip source
+                {
+                    cerr << "Error: add file " << fileName << " to zip archive " << endl;
+                    zip_source_free(source);
+                    continue;
+                }
+            }
+        }
+    }
+    if (zip_close(archive) == -1)
+        cerr << "flightsDB has not been zipped !" << endl;
+}
+
+void writeStringToFile(const string &str, const string &fileName, mode_t permissions) // TODO: Change to exceptions
+{
+    fs::create_directories(fs::path(fileName).parent_path()); // create directories if isn't exist
+    ofstream file(fileName, ios::trunc);
+    if (file.is_open())
+    {
+        file << str;
+        // Set the premissions using chmod function
+        chmod(fileName.c_str(), permissions);
+        file.close();
+        cout << "String written to file " << fileName << " successfully." << endl;
+    }
+    else
+    {
+        cerr << "Failed to open the file" << fileName << "." << endl;
+    }
 }
