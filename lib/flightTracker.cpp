@@ -120,29 +120,51 @@ int main(int argc, char **argv)
     }
 }
 
-int LogicProcess(pid_t &pid, int parentToChild[2], int childToParent[2], int childToParentError[2]) noexcept(false) // TODO: need to handle Functional Logics and pipelines and signals
+int LogicProcess(pid_t &pid, int parentToChild[2], int childToParent[2], int childToParentError[2]) noexcept(false)
 {
     bool Running = true;
-    cout << "Fork created [Process id: " << getpid() << ", [parent process id: " << getppid() << "]." << endl;
+    cout << endl
+         << "Fork created [Process id: " << getpid() << ", [parent process id: " << getppid() << "]." << endl;
+
+    // Redirect stdin to read from the Parent with pipe
+    if (dup2(parentToChild[READ_END], STDIN_FILENO) == -1)
+    {
+        std::cerr << "Failed to redirect stdin." << std::endl;
+        return EXIT_FAILURE;
+    }
+    // Redirect stdout and stderr to write to the Parent with pipes
+    if (dup2(childToParent[WRITE_END], STDOUT_FILENO) == -1 || dup2(childToParentError[WRITE_END], STDERR_FILENO) == -1)
+    {
+        std::cerr << "Failed to redirect stdout and stderr." << std::endl;
+        return EXIT_FAILURE;
+    }
     try
     {
         FlightDatabase flightDB(true);
-        // while (Running)
-        // {
-        //     // TODO: Child Logic
-        // }
+        int opCode;
+        while (Running)
+        {
+            if (read(STDIN_FILENO, &opCode, sizeof(opCode)) != sizeof(opCode))
+                break;
+            /*
+
+                Some Logics of the handling
+
+            */
+        }
     }
     catch (const exception &e)
     {
         cerr << e.what() << endl;
+        return EXIT_FAILURE;
     }
-
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 int UserInterface(pid_t &pid, int parentToChild[2], int childToParent[2], int childToParentError[2]) noexcept(false) // TODO: Need to handle UI Logic and pipelines and signals
 {
-    cout << "This is parent section [Process id: " << getpid() << "] , [child's id: " << pid << " ]." << endl;
+    cout << endl
+         << "This is parent section [Process id: " << getpid() << "] , [child's id: " << pid << "]." << endl;
     bool Running = true;
     int userChoice, status = 0;
     while (Running)
