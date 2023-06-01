@@ -1,9 +1,12 @@
 // import libarary
+#include "slib/airplane.h"
+#include "slib/arrivals.h"
+#include "slib/full_schedule.h"
 #include "slib/utility.h"
+
 #include <csignal>
 #include <iostream>
 #include <limits.h> // used for get PIPE_BUFF
-#include <mutex>    // for synchronization
 #include <stdio.h>
 #include <string>
 #include <sys/wait.h>
@@ -14,8 +17,6 @@ using namespace std;
 #define READ_END 0
 #define WRITE_END 1
 
-mutex mtx;
-
 // Function Declerations
 void printOptions();
 void pipeCleanUp(int parentToChild[2], int childToParent[2]);
@@ -25,7 +26,7 @@ void signalHandlerParent(int signal_number);
 void signalHandlerChild(int signal_number);
 int LogicProcess(pid_t &pid, int parentToChild, int childToParent);
 int OptionsHandler(int OpCode, int parentToChild, int childToParent, pid_t &pid);
-void taskHandler(int opCode, int parentToChild, int childToParent);
+void taskHandler(int opCode, int parentToChild, int childToParent, FlightDatabase &flightDB);
 int UserInterface(pid_t &pid, int parentToChild, int childToParent);
 bool sendTaskToChild(int parentToChild, int OpCode);
 int receiveTaskFromParent(int childToParent);
@@ -316,7 +317,12 @@ void taskHandler(int opCode, int parentToChild, int childToParent, FlightDatabas
     switch (opCode)
     {
         case (int)Menu::arrivingFlightsAirport:
+        {
+            list<string> args = receiveMessage(parentToChild);
+            string std_out = arrivals(args.front(), flightDB);
+            cout << std_out;
             break;
+        }
         case (int)Menu::fullScheduleAirport:
             break;
         case (int)Menu::fullScheduleAircraft:
