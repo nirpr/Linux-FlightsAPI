@@ -1,29 +1,21 @@
 #include "arrivals.h"
 using namespace std;
 
-int main(int argc, char **argv)
+string arrivals(string inputs, const FlightDatabase &DB)
 {
-    if (argc <= 1) // print error for didn't send argument to command
+    string str_out;
+    if (inputs.size() > 0) // print error for didn't send argument to command
     {
-        cerr << "Error: arguments didn't send." << endl;
-        return EXIT_FAILURE;
+        str_out += "Error: arguments didn't send.\n";
+        return str_out;
     }
-    FlightDatabase DB(false);
-    string pathDB(argv[0]);
+    std::istringstream iss(inputs);
     set<string> ICAOcodes;
-    getDirectoryFromFile(pathDB);
-    pathDB += "/flightsDB"; // adding flightsDB directory
-    for (int i = 1; i < argc; i++)
+    std::string word;
+    // Process each word individually
+    while (iss >> word)
     {
-        try
-        {
-            if (ICAOcodes.insert(argv[i]).second)
-                DB.load_db(argv[i]);
-        }
-        catch (const exception &e)
-        {
-            cerr << e.what() << endl;
-        }
+        ICAOcodes.insert(word);
     }
     list<Airport> airportLst = DB.get_flights_by_airport_name(ICAOcodes, (int)FlightDatabase::Directions::arriving);
     printFlightsArrivalFromAirport(airportLst);

@@ -3,6 +3,7 @@
 #include <csignal>
 #include <iostream>
 #include <limits.h> // used for get PIPE_BUFF
+#include <mutex>    // for synchronization
 #include <stdio.h>
 #include <string>
 #include <sys/wait.h>
@@ -12,39 +13,43 @@ using namespace std;
 // defines
 #define READ_END 0
 #define WRITE_END 1
-#define CHUNK_SIZE PIPE_BUF
+
+mutex mtx;
 
 // Function Declerations
 void printOptions();
-void pipeCleanUp(int parentToChild[2], int childToParent[2], int childToParentError[2]);
+void pipeCleanUp(int parentToChild[2], int childToParent[2]);
 int getUserDecision(int startRange, int endRange, int maxTimes);
+string getInputFromUser();
 void signalHandlerParent(int signal_number);
 void signalHandlerChild(int signal_number);
-int LogicProcess(pid_t &pid, int parentToChild[2], int childToParent[2], int childToParentError[2]);
-int OptionsHandler(int OpCode, int parentToChild[2], int childToParent[2], int childToParentError[2], pid_t &pid);
-int UserInterface(pid_t &pid, int parentToChild[2], int childToParent[2], int childToParentError[2]);
+int LogicProcess(pid_t &pid, int parentToChild, int childToParent);
+int OptionsHandler(int OpCode, int parentToChild, int childToParent, pid_t &pid);
+void taskHandler(int opCode, int parentToChild, int childToParent);
+int UserInterface(pid_t &pid, int parentToChild, int childToParent);
 bool sendTaskToChild(int parentToChild, int OpCode);
 int receiveTaskFromParent(int childToParent);
-string receiveResults(int parentToChild);
+list<string> receiveMessage(int pipeRead);
+void sendMessage(int pipeWrite, list<string> strings);
+void sendMessage(int pipeWrite, string message);
 
 // Enum Declerations
 enum class ProgramSettings
 {
-    optionStartRange = 1,
-    optionEndRange = 7,
     MaxInputAttempts = 3
 };
 
 enum class Menu
 {
-    _,
+    optionStartRange,
     arrivingFlightsAirport,
     fullScheduleAirport,
     fullScheduleAircraft,
     updateDB,
     zipDB,
     childPID,
-    Exit
+    Exit,
+    optionEndRange
 };
 
 // Functions
@@ -52,8 +57,8 @@ int main(int argc, char **argv)
 {
     cout << "Program is starting" << endl;
     // ---- First Pipe setup ----
-    int parentToChild[2] = {0, 0}, childToParent[2] = {0, 0}, childToParentError[2] = {0, 0}; // create pipes for communication
-    if (pipe(parentToChild) == -1 || pipe(childToParent) == -1 || pipe(childToParentError) == -1)
+    int parentToChild[2] = {0, 0}, childToParent[2] = {0, 0}; // create pipes for communication
+    if (pipe(parentToChild) == -1 || pipe(childToParent) == -1)
     {
         cerr << "Failed to create pipe." << endl;
         return EXIT_FAILURE;
@@ -69,31 +74,29 @@ int main(int argc, char **argv)
         if (pid > 0) // Parent
         {
             // Parent Pipe Setup Continue
-            close(parentToChild[READ_END]);       // Parent dont read from this pipe
-            close(childToParent[WRITE_END]);      // Parent dont write to this pipe
-            close(childToParentError[WRITE_END]); // Parent dont write to this pipe
+            close(parentToChild[READ_END]);  // Parent dont read from this pipe
+            close(childToParent[WRITE_END]); // Parent dont write to this pipe
 
             // Parent Signals Setup
             signal(SIGINT, signalHandlerParent); // Register SIGINT of parent
 
             // UI - Parent Handling
-            returnedStatus = UserInterface(pid, parentToChild, childToParent, childToParentError); // Handle UI
-            pipeCleanUp(parentToChild, childToParent, childToParentError);                         // Close the pipes between Parent and Child}
+            returnedStatus = UserInterface(pid, parentToChild[WRITE_END], childToParent[READ_END]); // Handle UI
+            pipeCleanUp(parentToChild, childToParent);                                              // Close the pipes between Parent and Child}
             return returnedStatus;
         }
         else if (pid == 0) // Child
         {
             // Child Pipe Setup Continue
-            close(parentToChild[WRITE_END]);     // Child dont write to this pipe
-            close(childToParent[READ_END]);      // Child dont read from this pipe
-            close(childToParentError[READ_END]); // Parent dont write to this pipe
+            close(parentToChild[WRITE_END]); // Child dont write to this pipe
+            close(childToParent[READ_END]);  // Child dont read from this pipe
 
             // Child Signals Setup
             signal(SIGUSR1, signalHandlerChild); // Register SIGUSR1 of Child
 
             // Logic Process - Child Handling
-            returnedStatus = LogicProcess(pid, parentToChild, childToParent, childToParentError); // Handle Task and logics from Parent
-            pipeCleanUp(parentToChild, childToParent, childToParentError);                        // Close the pipes between Parent and Child}
+            returnedStatus = LogicProcess(pid, parentToChild[READ_END], childToParent[WRITE_END]); // Handle Task and logics from Parent
+            pipeCleanUp(parentToChild, childToParent);                                             // Close the pipes between Parent and Child}
             return returnedStatus;
         }
         else // Fork failed handle
@@ -120,48 +123,39 @@ int main(int argc, char **argv)
     }
 }
 
-int LogicProcess(pid_t &pid, int parentToChild[2], int childToParent[2], int childToParentError[2]) noexcept(false)
+int LogicProcess(pid_t &pid, int parentToChild, int childToParent) noexcept(false)
 {
     bool Running = true;
     cout << endl
          << "Fork created [Process id: " << getpid() << ", [parent process id: " << getppid() << "]." << endl;
-
-    // Redirect stdin to read from the Parent with pipe
-    if (dup2(parentToChild[READ_END], STDIN_FILENO) == -1)
-    {
-        std::cerr << "Failed to redirect stdin." << std::endl;
-        return EXIT_FAILURE;
-    }
-    // Redirect stdout and stderr to write to the Parent with pipes
-    if (dup2(childToParent[WRITE_END], STDOUT_FILENO) == -1 || dup2(childToParentError[WRITE_END], STDERR_FILENO) == -1)
-    {
-        std::cerr << "Failed to redirect stdout and stderr." << std::endl;
-        return EXIT_FAILURE;
-    }
     try
     {
         FlightDatabase flightDB(true);
-        int opCode;
+        int opCode = -1;
         while (Running)
         {
-            if (read(STDIN_FILENO, &opCode, sizeof(opCode)) != sizeof(opCode))
-                break;
-            /*
-
-                Some Logics of the handling
-
-            */
+            opCode = receiveTaskFromParent(parentToChild);
+            if (opCode == (int)Menu::Exit || (opCode <= (int)Menu::optionStartRange && (int)Menu::optionEndRange <= opCode))
+            {
+                // TODO: graceful exit here
+                if (opCode == (int)Menu::Exit)
+                    Running = false;
+                else
+                    return EXIT_FAILURE;
+            }
+            else
+                taskHandler(opCode, parentToChild, childToParent, flightDB);
         }
     }
     catch (const exception &e)
     {
-        cerr << e.what() << endl;
+        cerr << e.what() << endl; // TODO: Delete later (child can't print | maybe pass message to parent)
         return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;
 }
 
-int UserInterface(pid_t &pid, int parentToChild[2], int childToParent[2], int childToParentError[2]) noexcept(false) // TODO: Need to handle UI Logic and pipelines and signals
+int UserInterface(pid_t &pid, int parentToChild, int childToParent) noexcept(false) // TODO: Need to handle UI Logic and pipelines and signals
 {
     cout << endl
          << "This is parent section [Process id: " << getpid() << "] , [child's id: " << pid << "]." << endl;
@@ -170,19 +164,19 @@ int UserInterface(pid_t &pid, int parentToChild[2], int childToParent[2], int ch
     while (Running)
     {
         printOptions();
-        userChoice = getUserDecision((int)ProgramSettings::optionStartRange,
-                                     (int)ProgramSettings::optionEndRange,
+        userChoice = getUserDecision((int)Menu::optionStartRange,
+                                     (int)Menu::optionEndRange,
                                      (int)ProgramSettings::MaxInputAttempts);
         // TODO: Handle userChoice and tranfer it to the Child process with pipeline in OptionsHandler
-        OptionsHandler(userChoice, parentToChild, childToParent, childToParentError, pid);
+        OptionsHandler(userChoice, parentToChild, childToParent, pid);
         // TODO: Wait for response from the Child process and get from pipeline the results
         if (userChoice == (int)Menu::Exit)
             Running = false;
     }
-    return 0;
+    return EXIT_SUCCESS;
 }
 
-void pipeCleanUp(int parentToChild[2], int childToParent[2], int childToParentError[2])
+void pipeCleanUp(int parentToChild[2], int childToParent[2])
 {
     // Close Parent to Child - IO Pipe
     close(parentToChild[READ_END]);
@@ -191,10 +185,6 @@ void pipeCleanUp(int parentToChild[2], int childToParent[2], int childToParentEr
     // Close Child to Parent - IO Pipe
     close(childToParent[READ_END]);
     close(childToParent[WRITE_END]);
-
-    // Close Child to Parent - Error Pipe
-    close(childToParentError[READ_END]);
-    close(childToParentError[WRITE_END]);
 }
 
 void signalHandlerParent(int signal_number) // TODO: need to handle signals
@@ -263,7 +253,7 @@ int getUserDecision(int startRange, int endRange, int maxTimes)
 {
     int UserDecision, timesFailed = 0;
     cin >> UserDecision;
-    while ((UserDecision < startRange || endRange < UserDecision) && timesFailed < maxTimes)
+    while ((UserDecision <= startRange || endRange <= UserDecision) && timesFailed < maxTimes)
     {
         timesFailed++;
         if (timesFailed == maxTimes - 1)
@@ -284,75 +274,148 @@ int getUserDecision(int startRange, int endRange, int maxTimes)
     return UserDecision;
 }
 
-int OptionsHandler(int OpCode, int parentToChild[2], int childToParent[2], int childToParentError[2], pid_t &pid) // TODO: Finish Handling logics for parents
+int OptionsHandler(int OpCode, int parentToChild, int childToParent, pid_t &pid) // TODO: Finish Handling logics for parents
 {
-    string results;
+    list<string> std_out;
     switch (OpCode)
     {
-        // Same Functionality for 1-3 (Maybe 4?) - TODO: Check for 4.
+        // Same Functionality for 1-4
         case (int)Menu::arrivingFlightsAirport: // Same Logic (NO Break)
         case (int)Menu::fullScheduleAirport:    // Same Logic (NO Break)
-        case (int)Menu::fullScheduleAircraft:   // Same Logic (Handle and break for 1-3 OpCodes)
-            sendTaskToChild(parentToChild[WRITE_END], OpCode);
-            results = receiveResults(childToParent[READ_END]);
-            cout << results;
+        case (int)Menu::fullScheduleAircraft:   // Same Logic (NO Break)
+        case (int)Menu::updateDB:               // Same Logic (Handle and break for 1-3 OpCodes)
+        {
+            sendTaskToChild(parentToChild, OpCode);
+            string input = getInputFromUser(); // TODO: Finish this
+            sendMessage(parentToChild, input);
+            std_out = receiveMessage(childToParent);
+            // Add print for std_out if not empty
             break;
-        case (int)Menu::updateDB:
-            // TODO: Call reRun program (function not program). - (Child Handling)
-            break;
+        }
         case (int)Menu::zipDB:
-            // TODO Create function with libzip for zip the DB and call this function (Child Handling)
+        {
+            sendTaskToChild(parentToChild, OpCode);
             break;
+        }
         case (int)Menu::childPID:
+        {
             cout << "The Process Child's ID: " << pid << endl;
             break;
+        }
         case (int)Menu::Exit:
+        {
             // TODO: Graceful Exit
             break;
+        }
     }
     return 0;
 }
 
+void taskHandler(int opCode, int parentToChild, int childToParent, FlightDatabase &flightDB)
+{
+    switch (opCode)
+    {
+        case (int)Menu::arrivingFlightsAirport:
+            break;
+        case (int)Menu::fullScheduleAirport:
+            break;
+        case (int)Menu::fullScheduleAircraft:
+            break;
+        case (int)Menu::updateDB:
+            break;
+        case (int)Menu::zipDB:
+
+            break;
+        default:
+            break;
+    }
+}
+
 bool sendTaskToChild(int parentToChild, int OpCode)
 {
-    int status;
     ssize_t bytesWritten = write(parentToChild, &OpCode, sizeof(OpCode));
     if (bytesWritten == -1)
     {
         cerr << "Failed to write to child." << endl;
-        return false; // TODO: Error Handling instend
+        return false; // TODO: Error Handling instend maybe
     }
     return true;
 }
 
 int receiveTaskFromParent(int pipeRead)
 {
-    int OpCode;
-    ssize_t bytesRead = read(pipeRead, &OpCode, sizeof(OpCode));
-    if (bytesRead == -1)
-    {
-        cerr << "Failed to receive result from Parent." << endl;
-        // TODO: Graceful exit
-    }
-    close(pipeRead);
+    int OpCode = -1; // if -1 returned will be gracefull exit for undefined OpCode
+    read(pipeRead, &OpCode, sizeof(OpCode));
     return OpCode;
 }
 
-string receiveResults(int pipeRead)
+list<string> receiveMessage(int pipeRead)
 {
-    string results;
-    char buffer[CHUNK_SIZE];
-    while (true)
+    char buffer[PIPE_BUF];
+    read(pipeRead, buffer, sizeof(buffer));
+    string numReadsSizes(buffer);
+    istringstream iss(numReadsSizes);
+    int numReads;
+    iss >> numReads;
+
+    list<int> sizes;
+    int size;
+    while (iss >> size)
     {
-        ssize_t bytesRead = read(pipeRead, buffer, CHUNK_SIZE);
-        if (bytesRead == 0)
-            break;
-        if (bytesRead == -1)
-        {
-            std::cerr << "Failed to receive result." << std::endl;
-            // TODO: Graceful exit
-        }
-        results += buffer; // Append the string and continue to read till fd is empty
+        sizes.push_back(size);
     }
-    return results;
+
+    // Read the strings from the child process
+    list<string> strings;
+    for (int size : sizes)
+    {
+        string stringData;
+        char chunk[1024];
+        int bytesRead = 0;
+        while ((bytesRead = read(pipeRead, chunk, sizeof(chunk))) > 0)
+        {
+            stringData.append(chunk, bytesRead);
+            if (stringData.size() >= size)
+                break;
+        }
+        strings.push_back(stringData);
+    }
+    return strings;
+}
+
+void sendMessage(int pipeWrite, list<string> strings)
+{
+    // Send the number of reads and sizes to the parent process
+    int numReads = strings.size();
+    string sizesData;
+    for (const string &str : strings)
+    {
+        sizesData += to_string(str.size()) + " ";
+    }
+    sizesData.pop_back(); // Remove the trailing space
+
+    string sizesMessage = to_string(numReads) + " " + sizesData;
+    write(pipeWrite, sizesMessage.c_str(), sizesMessage.size() + 1);
+
+    // Send the strings to the pipe
+    for (const auto &str : strings)
+    {
+        int remainingSize = str.size();
+        int offset = 0;
+        // Split the string into smaller chunks if necessary
+        while (remainingSize > 0)
+        {
+            int chunkSize = min(remainingSize, PIPE_BUF);
+            write(pipeWrite, str.c_str() + offset, chunkSize);
+            remainingSize -= chunkSize;
+            offset += chunkSize;
+        }
+    }
+}
+
+void sendMessage(int pipeWrite, string message)
+{
+    list<string> messageList;
+    messageList.push_front(message);
+    sendMessage(pipeWrite, messageList);
 }
