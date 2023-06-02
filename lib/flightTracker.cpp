@@ -15,6 +15,8 @@ using namespace std;
 #define WRITE_END 1
 
 mutex mtx;
+pid_t pid = -1; // global so we can access the child's pid whenever we need
+
 
 // Function Declerations
 void printOptions();
@@ -32,6 +34,7 @@ int receiveTaskFromParent(int childToParent);
 list<string> receiveMessage(int pipeRead);
 void sendMessage(int pipeWrite, list<string> strings);
 void sendMessage(int pipeWrite, string message);
+void gracefulExit(pid_t childPid); // need to implement
 
 // Enum Declerations
 enum class ProgramSettings
@@ -66,7 +69,6 @@ int main(int argc, char **argv)
     // ---- Pipe setup End ----
 
     // Fork the process to Parent and Child
-    pid_t pid = -1;
     int returnedStatus;
     try
     {
@@ -110,6 +112,7 @@ int main(int argc, char **argv)
         cerr << e.what() << endl;
         if (pid > 0) // Parent
         {
+            gracefulExit(pid);
             // TODO: Maybe add check if child is alive and make graceful exit for child before exit.
         }
         else if (pid == 0)
@@ -192,8 +195,8 @@ void signalHandlerParent(int signal_number) // TODO: need to handle signals
     switch (signal_number)
     {
         case SIGINT:
-            // TODO: Handle SIGINT fault will zip file and gracefully exit
             cout << "Received SIGINT signal" << endl;
+            gracefulExit(pid); // this is the child's pid 
             exit(SIGINT);
             break;
         case SIGTERM:
@@ -213,26 +216,29 @@ void signalHandlerParent(int signal_number) // TODO: need to handle signals
     }
 }
 
-void signalHandlerChild(int signal_number) // TODO: need to handle signals
+void signalHandlerChild(int signal_number)
 {
-    switch (signal_number)
-    {
+        switch(signal_number) {
         case SIGINT:
-            cout << "Received SIGINT signal" << endl;
+			cout << "Received SIGINT signal" << endl;
             break;
         case SIGTERM:
-            cout << "Received SIGTERM signal" << endl;
+			cout << "Received SIGTERM signal" << endl;
             break;
-        case SIGSEGV:
-            cout << "Received SIGSEGV signal" << endl;
-            exit(1);
+		case SIGSEGV:
+			cout << "Received SIGSEGV signal" << endl;
+			cout << "Segmentation fault occurred. Exiting gracefully" << endl;
+            FlightDatabase::zipDB();
+			exit(1);
             break;
         case SIGUSR1:
-            // TODO: Handle SIGUSR1 fault gracefully exit
-            cout << "Received SIGUSR1 signal" << endl;
+			cout << "zippin and terminating..." << endl;
+            FlightDatabase::zipDB();
+            exit(SIGUSR1);
             break;
+			
         default:
-            cout << "Received unknown signal" << endl;
+			cout << "Received unknown signal" << endl;
     }
 }
 
@@ -419,3 +425,9 @@ void sendMessage(int pipeWrite, string message)
     messageList.push_front(message);
     sendMessage(pipeWrite, messageList);
 }
+
+void gracefulExit(pid_t childPid)
+{
+    kill(childPid, SIGUSR1);
+}
+
