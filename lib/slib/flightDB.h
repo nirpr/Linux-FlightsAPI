@@ -52,7 +52,7 @@ class FlightDatabase
     };
     enum class Directions
     {
-        arriving,
+        arriving,   
         destinations,
         both
     };

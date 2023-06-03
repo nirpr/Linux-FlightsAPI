@@ -2,78 +2,51 @@
 using namespace std;
 namespace fs = std::filesystem;
 
-int main(int argc, char **argv)
+string airplane(string inputs, const FlightDatabase &DB)
 {
-    if (argc <= 1) // print error for didn't send argument to command
+    string std_out;
+    if (inputs.size() <= 0) // print error for didn't send arguments
     {
-        cerr << "Error: arguments didn't send." << endl;
-        return EXIT_FAILURE;
+        std_out += "Error: arguments didn't send.\n";
+        return std_out;
     }
-    FlightDatabase DB(false);
-    string pathDB(argv[0]);
-    getDirectoryFromFile(pathDB);
-    int airplanes_amount = argc - 1;
-    pathDB += "/flightsDB"; // adding flightsDB directory ("\\" for windows and "/" for linux)
-    try
-    {
-        for (const auto &file_itr : fs::directory_iterator(pathDB))
-        {
-            try
-            {
-                string name = file_itr.path().filename().string();
-                DB.load_db(file_itr.path().filename().string());
-            }
-            catch (const exception &e)
-            {
-                cerr << e.what() << endl;
-            }
-        }
-    }
-    catch (const fs::filesystem_error &e)
-    {
-        if (e.code().value() == (int)std_error::_File_not_found || e.code().value() == (int)std_error::_Path_not_found)
-            cerr << "Error: FlightDB is not exist, In this case for run this script you should scan for flightsScanner.sh or use reRun script." << endl;
-        else if (e.code().value() == (int)std_error::_Access_denied)
-        {
-            cerr << "Error: Access Denied to FlightDB, check premissions." << endl;
-            return false;
-        }
-        else
-        {
-            cerr << "Error: Unknown error in reading data from Database" << endl;
-        }
-        return EXIT_FAILURE;
-    }
-    catch (const exception &e)
-    {
-        cerr << e.what() << endl;
-        return EXIT_FAILURE;
-    }
-    // Printing the Flights
-    printFlightsByAirplanes(DB, argv, airplanes_amount);
+
+    istringstream iss(inputs);
+    set<string> airplanes;
+    string arg;
+
+    // Spliting string to arguments (airplanes codes)
+    while (iss >> arg)
+        airplanes.insert(arg);
+
+    printFlightsByAirplanesToString(DB, airplanes, std_out);
+    return std_out;
 }
 
-void printAirplaneFlightDetails(const Flight &flight)
+
+void printAirplaneFlightDetailsToString(const Flight &flight, string& sdt_out)
 {
-    cout << flight.get_icao24() << " "
-         << "departed from"
-         << " " << flight.get_origin() << " "
-         << "at"
-         << " " << unix_time_to_date(flight.get_departure_time()) << " "
-         << "arrived in"
-         << " " << flight.get_destination() << " "
-         << "at"
-         << " " << unix_time_to_date(flight.get_arrival_time()) << endl;
+    sdt_out = sdt_out + flight.get_icao24() + " "
+         + "departed from"
+         + " " + flight.get_origin() +" "
+         + "at"
+         + " " + unix_time_to_date(flight.get_departure_time()) + " "
+         + "arrived in"
+         + " " + flight.get_destination() + " "
+         + "at"
+         + " " + unix_time_to_date(flight.get_arrival_time()) + '\n';
+    
+    return;
 }
 
-void printFlightsByAirplanes(const FlightDatabase &DB, char **argv, int airplanes_amount)
+void printFlightsByAirplanesToString(const FlightDatabase &DB, set<string> airplanes, string& std_out)
 {
-    for (int i = 1; i <= airplanes_amount; ++i)
+    for(const auto& airplane:airplanes)
     {
-        set<Flight> flights = DB.getAirplanes(argv[i]); // need to get only arrivels
+        set<Flight> flights = DB.getAirplanes(airplane); // need to get only arrivels
         for (auto &flight : flights)
         {
-            printAirplaneFlightDetails(flight);
+            printAirplaneFlightDetailsToString(flight, std_out);
         }
     }
 }

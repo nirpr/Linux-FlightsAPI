@@ -1,43 +1,39 @@
 #include "full_schedule.h"
 using namespace std;
 
-int main(int argc, char **argv)
+string full_schedule(string inputs, const FlightDatabase &DB)
 {
-    if (argc <= 1) // print error for didn't send argument to command
+    string std_out;
+    if (inputs.size() <= 0) // print error for didn't send arguments
     {
-        cerr << "Error: arguments didn't send." << endl;
-        return EXIT_FAILURE;
+        std_out += "Error: arguments didn't send.\n";
+        return std_out;
     }
-    FlightDatabase DB(false);
-    string pathDB(argv[0]);
-    getDirectoryFromFile(pathDB);
-    pathDB += "/flightsDB";
+
+    istringstream iss(inputs);
     set<string> airport_name_required;
-    for (int i = 1; i < argc; i++)
-    {
-        try
-        {
-            if (airport_name_required.insert(argv[i]).second) // try to load the airport only if this airport not in the set
-                DB.load_db(argv[i]);
-        }
-        catch (const exception &e)
-        {
-            cerr << e.what() << endl;
-        }
-    }
-    if (airport_name_required.size() < 1)
+    string arg;
+
+    // Spliting string to arguments (airplanes codes)
+    while (iss >> arg)
+        airport_name_required.insert(arg);
+
+    list<Airport> AirportsRequired = DB.get_flights_by_airport_name(airport_name_required, (int)FlightDatabase::Directions::both);
+
+    if (AirportsRequired.size() < 1)
     {
         cout << endl
              << "All the airport that required to print are not valid airports." << endl;
         return EXIT_SUCCESS;
     }
-    list<Airport> AirportsRequired = DB.get_flights_by_airport_name(airport_name_required, (int)FlightDatabase::Directions::both);
-    printFlightsByOrderFromAirport(AirportsRequired);
+
+    printFlightsByOrderFromAirportToString(AirportsRequired, std_out);
+    return std_out;
 }
 
-void printFlightsByOrderFromAirport(const list<Airport> &airportsToPrint)
+void printFlightsByOrderFromAirportToString(const list<Airport> &airportsToPrint,string& std_out)
 {
-    cout << "Number of Airports to Report: " << airportsToPrint.size() << endl;
+    std_out = std_out + "Number of Airports to Report: " + to_string(airportsToPrint.size()) + '\n';
     for (auto &airport : airportsToPrint)
     {
         // iterators to Begin of Flights Lists
@@ -50,37 +46,37 @@ void printFlightsByOrderFromAirport(const list<Airport> &airportsToPrint)
         {
             if (itrArv->get_arrival_time() < itrDst->get_departure_time())
             {
-                cout << "Airport " << airport.get_name() << ": ";
-                printArrivingFlightDetailsFS(*itrArv);
+                std_out = std_out + "Airport " + airport.get_name() + ": ";
+                printArrivingFlightDetailsFSToString(*itrArv, std_out);
                 ++itrArv;
             }
             else
             {
-                cout << "Airport " << airport.get_name() << ": ";
-                printDepartingFlightDetailsFS(*itrDst);
+                std_out = std_out + "Airport " + airport.get_name() + ": ";
+                printDepartingFlightDetailsFSToString(*itrDst, std_out);
                 ++itrDst;
             }
         }
         while (itrArv != itrArvEnd)
         {
-            cout << "Airport " << airport.get_name() << ": ";
-            printArrivingFlightDetailsFS(*itrArv);
+            std_out = std_out + "Airport " + airport.get_name() + ": ";
+            printArrivingFlightDetailsFSToString(*itrArv, std_out);
             ++itrArv;
         }
         while (itrDst != itrDstEnd)
         {
-            cout << "Airport " << airport.get_name() << ": ";
-            printDepartingFlightDetailsFS(*itrDst);
+            std_out = std_out + "Airport " + airport.get_name() + ": ";
+            printDepartingFlightDetailsFSToString(*itrDst, std_out);
             ++itrDst;
         }
     }
 }
 
-void printDepartingFlightDetailsFS(const Flight &flight)
+void printDepartingFlightDetailsFSToString(const Flight &flight, string& std_out)
 {
-    cout << "Flight #" << flight.get_callsign() << " departing to " << flight.get_destination() << " at " << unix_time_to_date(flight.get_departure_time()) << endl;
+    std_out = std_out + "Flight #" + flight.get_callsign() + " departing to " + flight.get_destination() + " at " + unix_time_to_date(flight.get_departure_time()) + '\n';
 }
-void printArrivingFlightDetailsFS(const Flight &flight)
+void printArrivingFlightDetailsFSToString(const Flight &flight, string& std_out)
 {
-    cout << "Flight #" << flight.get_callsign() << " arriving from " << flight.get_origin() << " at " << unix_time_to_date(flight.get_arrival_time()) << endl;
+    std_out = std_out + "Flight #" + flight.get_callsign() + " arriving from " + flight.get_origin() + " at " + unix_time_to_date(flight.get_arrival_time()) + '\n';
 }

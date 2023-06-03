@@ -4,7 +4,7 @@ using namespace std;
 string arrivals(string inputs, const FlightDatabase &DB)
 {
     string std_out;
-    if (inputs.size() > 0) // print error for didn't send arguments
+    if (inputs.size() <= 0) // print error for didn't send arguments
     {
         std_out += "Error: arguments didn't send.\n";
         return std_out;
