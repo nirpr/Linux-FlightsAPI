@@ -12,14 +12,12 @@ string arrivals(string inputs, const FlightDatabase &DB)
     istringstream iss(inputs);
     set<string> ICAOcodes;
     string arg;
-
     // Spliting string to arguments
     while (iss >> arg)
         ICAOcodes.insert(arg);
 
     list<Airport> airportLst = DB.get_flights_by_airport_name(ICAOcodes, (int)FlightDatabase::Directions::arriving);
     printFlightsArrivalFromAirportToString(airportLst, std_out);
-
     return std_out; // return the final print
 }
 
@@ -36,7 +34,8 @@ void printFlightsArrivalFromAirportToString(const std::list<Airport> &airportsTo
         list<Flight>::const_iterator itrArvEnd = airport.get_flightsArv().end();
         while (itrArv != itrArvEnd)
         {
-            std_out += airport.get_name() + ": ";
+            std_out += airport.get_name();
+            std_out += ": ";
             printArrivingFlightDetailsToString(*itrArv, std_out);
             ++itrArv;
         }

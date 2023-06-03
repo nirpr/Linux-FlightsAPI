@@ -135,10 +135,13 @@ int LogicProcess(pid_t &pid, int parentToChild, int childToParent) noexcept(fals
          << "Fork created [Process id: " << getpid() << ", [parent process id: " << getppid() << "]." << endl;
     try
     {
+        cout << "CHILD: before flightDB create." << endl;
         FlightDatabase flightDB(true);
+        cout << "CHILD: flightDB created." << endl;
         int opCode = -1;
         while (Running)
         {
+            cout << "CHILD: Starting while loop" << endl; // Debugging
             opCode = receiveTaskFromParent(parentToChild);
             cout << "CHILD: opCode Received (" << opCode << ")" << endl; // Debugging
             if (opCode == (int)Menu::Exit || (opCode <= (int)Menu::optionStartRange && (int)Menu::optionEndRange <= opCode))
@@ -150,12 +153,15 @@ int LogicProcess(pid_t &pid, int parentToChild, int childToParent) noexcept(fals
                     return EXIT_FAILURE;
             }
             else
+            {
+                cout << "CHILD: Before task handler mark" << endl; // Debugging
                 taskHandler(opCode, parentToChild, childToParent, flightDB);
+            }
         }
     }
     catch (const exception &e)
     {
-        cerr << e.what() << endl; // TODO: Delete later (child can't print | maybe pass message to parent)
+        cout << e.what() << endl; // TODO: Delete later (child can't print | maybe pass message to parent)
         return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;
@@ -174,9 +180,7 @@ int UserInterface(pid_t &pid, int parentToChild, int childToParent) noexcept(fal
         userChoice = getUserDecision((int)Menu::optionStartRange,
                                      (int)Menu::optionEndRange,
                                      (int)ProgramSettings::MaxInputAttempts);
-        // TODO: Handle userChoice and tranfer it to the Child process with pipeline in OptionsHandler
         OptionsHandler(userChoice, parentToChild, childToParent, pid);
-        // TODO: Wait for response from the Child process and get from pipeline the results
         if (userChoice == (int)Menu::Exit)
             Running = false;
     }
@@ -299,10 +303,17 @@ int OptionsHandler(int OpCode, int parentToChild, int childToParent, pid_t &pid)
         case (int)Menu::updateDB:               // Same Logic (Handle and break for 1-3 OpCodes)
         {
             sendTaskToChild(parentToChild, OpCode);
+            cout << "Parent: After sending Child task." << endl;
             string input = getInputFromUser(); // TODO: Finish this
+            cout << "Parent: After get input from User." << endl;
             sendMessage(parentToChild, input);
+            cout << "Parent: After sendMessage of input to Child." << endl;
             std_out = receiveMessage(childToParent);
-            // Add print for std_out if not empty
+            cout << "Parent: After receiveMessage from Child." << endl
+                 << endl
+                 << endl;
+            cout << "Size of std_out " << std_out.size() << endl
+                 << " Text:" << endl;
             break;
         }
         case (int)Menu::zipDB:
@@ -322,7 +333,7 @@ int OptionsHandler(int OpCode, int parentToChild, int childToParent, pid_t &pid)
             break;
         }
     }
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 void taskHandler(int opCode, int parentToChild, int childToParent, FlightDatabase &flightDB) noexcept(false)
@@ -331,9 +342,12 @@ void taskHandler(int opCode, int parentToChild, int childToParent, FlightDatabas
     {
         case (int)Menu::arrivingFlightsAirport:
         {
+            cout << "CHILD: before receiveMessage for arguemnts." << endl;
             string args = receiveMessage(parentToChild);
+            cout << "CHILD: after receiveMessage for arguemnts." << endl;
             string std_out = arrivals(args, flightDB);
-            cout << std_out;
+            cout << "CHILD: after arrivals logic, std_out size is " << std_out.size() << endl;
+            sendMessage(childToParent, std_out);
             break;
         }
         case (int)Menu::fullScheduleAirport:
@@ -375,37 +389,43 @@ int receiveTaskFromParent(int pipeRead) noexcept(false)
 string receiveMessage(int pipeRead) noexcept(false)
 {
     char buffer[PIPE_BUF];
-    size_t BytesToRead;
+    int BytesToRead;
     int bytesRead = 0;
+    cout << "Reading - Waiting for message size" << endl;
     bytesRead = read(pipeRead, &BytesToRead, sizeof(BytesToRead));
     if (bytesRead == -1)
         throw runtime_error("Read message from pipe filed!");
 
+    cout << "Reading - need to read " << BytesToRead << ", bytes size readed of the size is " << bytesRead << endl;
     // Read the strings from the child process
     string stringData;
     char chunk[PIPE_BUF];
     while (BytesToRead > 0)
     {
-        size_t chunkSize = min((size_t)PIPE_BUF, BytesToRead);
-        size_t bytesRead = read(pipeRead, chunk, chunkSize);
+        int chunkSize = min(PIPE_BUF - 1, BytesToRead);
+        int bytesRead = read(pipeRead, chunk, chunkSize);
+        cout << "Reading - size of chunk is " << bytesRead << "/" << chunkSize << endl;
         if (bytesRead > 0)
         {
+            chunk[chunkSize] = '\0';
             stringData.append(chunk); // append string
             BytesToRead -= bytesRead;
+            cout << "Reading - Bytes to Read for next read is " << BytesToRead << endl;
         }
         else if (bytesRead == -1)
             throw runtime_error("Read message from pipe filed!");
     }
+    cout << "Reading - Final reached" << endl;
     return stringData;
 }
 
 void sendMessage(int pipeWrite, list<string> strings) noexcept(false)
 {
     // Send the number of reads and sizes to the parent process
-    int numReads = strings.size();
-    size_t sizesData;
+    int sizesData;
     for (const string &str : strings)
         sizesData += str.size();
+    cout << "Sending - size: " << sizesData << endl;
     if (write(pipeWrite, &sizesData, sizeof(sizesData)) == -1)
         throw runtime_error("Failed to write Message into pipe!");
 
@@ -422,31 +442,56 @@ void sendMessage(int pipeWrite, list<string> strings) noexcept(false)
                 throw runtime_error("Failed to write Message into pipe!");
             remainingSize -= chunkSize;
             offset += chunkSize;
+            cout << "size left after write is " << remainingSize << endl;
         }
     }
 }
 
 void sendMessage(int pipeWrite, string message)
 {
-    list<string> messageList;
-    messageList.push_front(message);
-    sendMessage(pipeWrite, messageList);
+    // Send the number of reads and sizes to the parent process
+    int sizesData = message.size();
+    cout << "Sending - message size: " << sizesData << endl;
+    if (write(pipeWrite, &sizesData, sizeof(sizesData)) == -1)
+        throw runtime_error("Failed to write Message into pipe!");
+
+    // Send the strings to the pipe
+
+    int remainingSize = message.size();
+    int offset = 0;
+    // Split the string into smaller chunks if necessary
+    while (remainingSize > 0)
+    {
+        int chunkSize = min(remainingSize, PIPE_BUF);
+        if (write(pipeWrite, message.c_str() + offset, chunkSize) == -1)
+            throw runtime_error("Failed to write Message into pipe!");
+        remainingSize -= chunkSize;
+        offset += chunkSize;
+        cout << "Sending - size left after write is " << remainingSize << endl;
+    }
 }
+
+// void sendMessage(int pipeWrite, string message)
+// {
+//     list<string> messageList;
+//     messageList.push_front(message);
+//     sendMessage(pipeWrite, messageList);
+// }
 
 void gracefulExit(pid_t childPid)
 {
     if (kill(childPid, SIGUSR1) == 0)
         cout << "SIGUSR1 signal sent to child process." << endl;
     else
-        cout << "Failed to send SIGUSR1 signal to child process."  <<  endl;
+        cout << "Failed to send SIGUSR1 signal to child process." << endl;
 }
 
 string getInputFromUser()
 {
     string arguments;
     string argument;
-
-    while (true) // loop until the user enters an empty string
+    cin.ignore(numeric_limits<streamsize>::max(), '\n'); // ignore \n
+    while (true)                                         // loop until the user enters an empty string
     {
         cout << "Enter an argument (or press Enter to finish): ";
         getline(cin, argument);

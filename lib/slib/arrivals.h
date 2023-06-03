@@ -5,6 +5,7 @@
 #include "utility.h"
 #include <iostream>
 #include <set>
+#include <sstream>
 
 std::string arrivals(std::string inputs, const FlightDatabase &DB);
 void printArrivingFlightDetailsToString(const Flight &flight, std::string &std_out);

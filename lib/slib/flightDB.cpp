@@ -79,8 +79,8 @@ bool FlightDatabase::load_db(const string &airportCode) noexcept(false)
             throw runtime_error(errors);
         }
     }
-    if (!arv || !dst)
-        throw runtime_error(errors);
+    // if (!arv || !dst)  Maybe need to remove it
+    //     throw runtime_error(errors);
     return true;
 }
 
@@ -155,11 +155,11 @@ const set<Flight> FlightDatabase::getAirplanes(const string &icao24) const
 const list<Airport> FlightDatabase::get_flights_by_airport_name(const set<string> &airports_names, int ToFromBoth) const
 {
     list<Airport> airportsRequired;
+
     for (auto &airport : this->Airports)
-    {
         if (airports_names.count(airport.get_name()))
             airportsRequired.push_back(airport);
-    }
+
     return airportsRequired;
 }
 
