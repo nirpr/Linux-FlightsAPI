@@ -26,16 +26,16 @@ int getUserDecision(int startRange, int endRange, int maxTimes);
 string getInputFromUser();
 void signalHandlerParent(int signal_number);
 void signalHandlerChild(int signal_number);
-int LogicProcess(pid_t &pid, int parentToChild, int childToParent);
-int OptionsHandler(int OpCode, int parentToChild, int childToParent, pid_t &pid);
-void taskHandler(int opCode, int parentToChild, int childToParent, FlightDatabase &flightDB);
-int UserInterface(pid_t &pid, int parentToChild, int childToParent);
-bool sendTaskToChild(int parentToChild, int OpCode);
-int receiveTaskFromParent(int childToParent);
-string receiveMessage(int pipeRead);
-void sendMessage(int pipeWrite, list<string> strings);
-void sendMessage(int pipeWrite, string message);
-void gracefulExit(pid_t childPid); // need to implement
+int LogicProcess(pid_t &pid, int parentToChild, int childToParent) noexcept(false);
+int OptionsHandler(int OpCode, int parentToChild, int childToParent, pid_t &pid) noexcept(false);
+void taskHandler(int opCode, int parentToChild, int childToParent, FlightDatabase &flightDB) noexcept(false);
+int UserInterface(pid_t &pid, int parentToChild, int childToParent) noexcept(false);
+bool sendTaskToChild(int parentToChild, int OpCode) noexcept(false);
+int receiveTaskFromParent(int childToParent) noexcept(false);
+string receiveMessage(int pipeRead) noexcept(false);
+void sendMessage(int pipeWrite, list<string> strings) noexcept(false);
+void sendMessage(int pipeWrite, string message) noexcept(false);
+void gracefulExit(pid_t childPid);
 
 // Enum Declerations
 enum class ProgramSettings
@@ -140,6 +140,7 @@ int LogicProcess(pid_t &pid, int parentToChild, int childToParent) noexcept(fals
         while (Running)
         {
             opCode = receiveTaskFromParent(parentToChild);
+            cout << "CHILD: opCode Received (" << opCode << ")" << endl; // Debugging
             if (opCode == (int)Menu::Exit || (opCode <= (int)Menu::optionStartRange && (int)Menu::optionEndRange <= opCode))
             {
                 // TODO: graceful exit here
@@ -160,7 +161,7 @@ int LogicProcess(pid_t &pid, int parentToChild, int childToParent) noexcept(fals
     return EXIT_SUCCESS;
 }
 
-int UserInterface(pid_t &pid, int parentToChild, int childToParent) noexcept(false) // TODO: Need to handle UI Logic and pipelines and signals
+int UserInterface(pid_t &pid, int parentToChild, int childToParent) noexcept(false)
 {
     cout << endl
          << "This is parent section [Process id: " << getpid() << "] , [child's id: " << pid << "]." << endl;
@@ -168,6 +169,7 @@ int UserInterface(pid_t &pid, int parentToChild, int childToParent) noexcept(fal
     int userChoice, status = 0;
     while (Running)
     {
+        sleep(1); // for tests remove at the end.
         printOptions();
         userChoice = getUserDecision((int)Menu::optionStartRange,
                                      (int)Menu::optionEndRange,
@@ -285,7 +287,7 @@ int getUserDecision(int startRange, int endRange, int maxTimes)
     return UserDecision;
 }
 
-int OptionsHandler(int OpCode, int parentToChild, int childToParent, pid_t &pid) // TODO: Finish Handling logics for parents
+int OptionsHandler(int OpCode, int parentToChild, int childToParent, pid_t &pid) noexcept(false) // TODO: Finish Handling logics for parents
 {
     string std_out;
     switch (OpCode)
@@ -305,6 +307,7 @@ int OptionsHandler(int OpCode, int parentToChild, int childToParent, pid_t &pid)
         }
         case (int)Menu::zipDB:
         {
+            cout << "Send task to zip flightDB folder to Child Process" << endl;
             sendTaskToChild(parentToChild, OpCode);
             break;
         }
@@ -322,7 +325,7 @@ int OptionsHandler(int OpCode, int parentToChild, int childToParent, pid_t &pid)
     return 0;
 }
 
-void taskHandler(int opCode, int parentToChild, int childToParent, FlightDatabase &flightDB)
+void taskHandler(int opCode, int parentToChild, int childToParent, FlightDatabase &flightDB) noexcept(false)
 {
     switch (opCode)
     {
@@ -340,34 +343,36 @@ void taskHandler(int opCode, int parentToChild, int childToParent, FlightDatabas
         case (int)Menu::updateDB:
             break;
         case (int)Menu::zipDB:
-
+        {
+            cout << "taskHandler - zipDB" << endl;
+            flightDB.zipDB();
             break;
+        }
         default:
             break;
     }
 }
 
-bool sendTaskToChild(int parentToChild, int OpCode)
+bool sendTaskToChild(int parentToChild, int OpCode) noexcept(false)
 {
     ssize_t bytesWritten = write(parentToChild, &OpCode, sizeof(OpCode));
     if (bytesWritten == -1)
-    {
-        cerr << "Failed to write to child." << endl;
-        return false; // TODO: Error Handling instend maybe
-    }
+        throw runtime_error("Failed to write to child.");
     return true;
 }
 
-int receiveTaskFromParent(int pipeRead)
+int receiveTaskFromParent(int pipeRead) noexcept(false)
 {
-    int OpCode = -1; // if -1 returned will be gracefull exit for undefined OpCode
+    int OpCode = -1;                                               // if -1 returned will be gracefull exit for undefined OpCode
+    cout << "CHILD: Waiting for receive task from Parent" << endl; // Debugging
     size_t bytesRead = read(pipeRead, &OpCode, sizeof(OpCode));
+    cout << "CHILD: Read response is " << bytesRead << " and  OpCode is " << OpCode << endl; // Debugging
     if (bytesRead == -1)
         throw runtime_error("Failed to read task from pipe.");
     return OpCode;
 }
 
-string receiveMessage(int pipeRead)
+string receiveMessage(int pipeRead) noexcept(false)
 {
     char buffer[PIPE_BUF];
     size_t BytesToRead;
@@ -394,7 +399,7 @@ string receiveMessage(int pipeRead)
     return stringData;
 }
 
-void sendMessage(int pipeWrite, list<string> strings)
+void sendMessage(int pipeWrite, list<string> strings) noexcept(false)
 {
     // Send the number of reads and sizes to the parent process
     int numReads = strings.size();
