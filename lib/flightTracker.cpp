@@ -17,8 +17,6 @@ using namespace std;
 #define READ_END 0
 #define WRITE_END 1
 
-
-mutex mtx;
 pid_t pid = -1; // global so we can access the child's pid whenever we need
 
 // Function Declerations
@@ -199,7 +197,7 @@ void signalHandlerParent(int signal_number) // TODO: need to handle signals
     {
         case SIGINT:
             cout << "Received SIGINT signal" << endl;
-            gracefulExit(pid); // this is the child's pid 
+            gracefulExit(pid); // this is the child's pid
             exit(SIGINT);
             break;
         case SIGTERM:
@@ -221,27 +219,28 @@ void signalHandlerParent(int signal_number) // TODO: need to handle signals
 
 void signalHandlerChild(int signal_number)
 {
-        switch(signal_number) {
+    switch (signal_number)
+    {
         case SIGINT:
-			cout << "Received SIGINT signal" << endl;
+            cout << "Received SIGINT signal" << endl;
             break;
         case SIGTERM:
-			cout << "Received SIGTERM signal" << endl;
+            cout << "Received SIGTERM signal" << endl;
             break;
-		case SIGSEGV:
-			cout << "Received SIGSEGV signal" << endl;
-			cout << "Segmentation fault occurred. Exiting gracefully" << endl;
+        case SIGSEGV:
+            cout << "Received SIGSEGV signal" << endl;
+            cout << "Segmentation fault occurred. Exiting gracefully" << endl;
             FlightDatabase::zipDB();
-			exit(1);
+            exit(1);
             break;
         case SIGUSR1:
-			cout << "zippin and terminating..." << endl;
+            cout << "zippin and terminating..." << endl;
             FlightDatabase::zipDB();
             exit(SIGUSR1);
             break;
-			
+
         default:
-			cout << "Received unknown signal" << endl;
+            cout << "Received unknown signal" << endl;
     }
 }
 
@@ -359,7 +358,9 @@ bool sendTaskToChild(int parentToChild, int OpCode)
 int receiveTaskFromParent(int pipeRead)
 {
     int OpCode = -1; // if -1 returned will be gracefull exit for undefined OpCode
-    read(pipeRead, &OpCode, sizeof(OpCode));
+    size_t bytesRead = read(pipeRead, &OpCode, sizeof(OpCode));
+    if (bytesRead == -1)
+        throw runtime_error("Failed to read task from pipe.");
     return OpCode;
 }
 
@@ -367,10 +368,12 @@ string receiveMessage(int pipeRead)
 {
     char buffer[PIPE_BUF];
     size_t BytesToRead;
-    read(pipeRead, &BytesToRead, sizeof(BytesToRead));
+    int bytesRead = 0;
+    bytesRead = read(pipeRead, &BytesToRead, sizeof(BytesToRead));
+    if (bytesRead == -1)
+        throw runtime_error("Read message from pipe filed!");
 
     // Read the strings from the child process
-    int bytesRead = 0;
     string stringData;
     char chunk[PIPE_BUF];
     while (BytesToRead > 0)
@@ -395,7 +398,8 @@ void sendMessage(int pipeWrite, list<string> strings)
     size_t sizesData;
     for (const string &str : strings)
         sizesData += str.size();
-    write(pipeWrite, &sizesData, sizeof(sizesData));
+    if (write(pipeWrite, &sizesData, sizeof(sizesData)) == -1)
+        throw runtime_error("Failed to write Message into pipe!");
 
     // Send the strings to the pipe
     for (const auto &str : strings)
@@ -406,7 +410,8 @@ void sendMessage(int pipeWrite, list<string> strings)
         while (remainingSize > 0)
         {
             int chunkSize = min(remainingSize, PIPE_BUF);
-            write(pipeWrite, str.c_str() + offset, chunkSize);
+            if (write(pipeWrite, str.c_str() + offset, chunkSize) == -1)
+                throw runtime_error("Failed to write Message into pipe!");
             remainingSize -= chunkSize;
             offset += chunkSize;
         }
@@ -424,4 +429,3 @@ void gracefulExit(pid_t childPid)
 {
     kill(childPid, SIGUSR1);
 }
-
