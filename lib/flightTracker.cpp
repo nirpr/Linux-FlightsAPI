@@ -30,7 +30,7 @@ void taskHandler(int opCode, int parentToChild, int childToParent, FlightDatabas
 int UserInterface(pid_t &pid, int parentToChild, int childToParent);
 bool sendTaskToChild(int parentToChild, int OpCode);
 int receiveTaskFromParent(int childToParent);
-list<string> receiveMessage(int pipeRead);
+string receiveMessage(int pipeRead);
 void sendMessage(int pipeWrite, list<string> strings);
 void sendMessage(int pipeWrite, string message);
 
@@ -277,7 +277,7 @@ int getUserDecision(int startRange, int endRange, int maxTimes)
 
 int OptionsHandler(int OpCode, int parentToChild, int childToParent, pid_t &pid) // TODO: Finish Handling logics for parents
 {
-    list<string> std_out;
+    string std_out;
     switch (OpCode)
     {
         // Same Functionality for 1-4
@@ -318,8 +318,8 @@ void taskHandler(int opCode, int parentToChild, int childToParent, FlightDatabas
     {
         case (int)Menu::arrivingFlightsAirport:
         {
-            list<string> args = receiveMessage(parentToChild);
-            string std_out = arrivals(args.front(), flightDB);
+            string args = receiveMessage(parentToChild);
+            string std_out = arrivals(args, flightDB);
             cout << std_out;
             break;
         }
@@ -355,53 +355,39 @@ int receiveTaskFromParent(int pipeRead)
     return OpCode;
 }
 
-list<string> receiveMessage(int pipeRead)
+string receiveMessage(int pipeRead)
 {
     char buffer[PIPE_BUF];
-    read(pipeRead, buffer, sizeof(buffer));
-    string numReadsSizes(buffer);
-    istringstream iss(numReadsSizes);
-    int numReads;
-    iss >> numReads;
-
-    list<int> sizes;
-    int size;
-    while (iss >> size)
-    {
-        sizes.push_back(size);
-    }
+    size_t BytesToRead;
+    read(pipeRead, &BytesToRead, sizeof(BytesToRead));
 
     // Read the strings from the child process
-    list<string> strings;
-    for (int size : sizes)
+    int bytesRead = 0;
+    string stringData;
+    char chunk[PIPE_BUF];
+    while (BytesToRead > 0)
     {
-        string stringData;
-        char chunk[1024];
-        int bytesRead = 0;
-        while ((bytesRead = read(pipeRead, chunk, sizeof(chunk))) > 0)
+        size_t chunkSize = min((size_t)PIPE_BUF, BytesToRead);
+        size_t bytesRead = read(pipeRead, chunk, chunkSize);
+        if (bytesRead > 0)
         {
-            stringData.append(chunk, bytesRead);
-            if (stringData.size() >= size)
-                break;
+            stringData.append(chunk); // append string
+            BytesToRead -= bytesRead;
         }
-        strings.push_back(stringData);
+        else if (bytesRead == -1)
+            throw runtime_error("Read message from pipe filed!");
     }
-    return strings;
+    return stringData;
 }
 
 void sendMessage(int pipeWrite, list<string> strings)
 {
     // Send the number of reads and sizes to the parent process
     int numReads = strings.size();
-    string sizesData;
+    size_t sizesData;
     for (const string &str : strings)
-    {
-        sizesData += to_string(str.size()) + " ";
-    }
-    sizesData.pop_back(); // Remove the trailing space
-
-    string sizesMessage = to_string(numReads) + " " + sizesData;
-    write(pipeWrite, sizesMessage.c_str(), sizesMessage.size() + 1);
+        sizesData += str.size();
+    write(pipeWrite, &sizesData, sizeof(sizesData));
 
     // Send the strings to the pipe
     for (const auto &str : strings)
