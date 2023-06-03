@@ -24,6 +24,9 @@ set(SOURCE_FILES
 
 add_executable(runMe.out ${SOURCE_FILES})
 
+# Set the output directory to the project root directory.
+set_target_properties(runMe.out PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
+
 # Find the libzip library
 find_library(LIBZIP zip REQUIRED)
 
