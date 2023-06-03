@@ -1,4 +1,4 @@
-#include "slib/utility.h"
+#include "utility.h"
 #include <filesystem>
 using namespace std;
 namespace fs = std::filesystem;
