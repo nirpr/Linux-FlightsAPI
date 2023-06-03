@@ -18,8 +18,7 @@ set(SOURCE_FILES
     lib/slib/airplane.cpp
     lib/slib/arrivals.cpp
     lib/slib/full_schedule.cpp
-
-    # lib/slib/reRun.cpp
+    lib/slib/reRun.cpp
 )
 
 add_executable(runMe.out ${SOURCE_FILES})

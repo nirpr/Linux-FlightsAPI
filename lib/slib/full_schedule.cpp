@@ -31,7 +31,7 @@ string full_schedule(string inputs, const FlightDatabase &DB)
     return std_out;
 }
 
-void printFlightsByOrderFromAirportToString(const list<Airport> &airportsToPrint,string& std_out)
+void printFlightsByOrderFromAirportToString(const list<Airport> &airportsToPrint, string &std_out)
 {
     std_out = std_out + "Number of Airports to Report: " + to_string(airportsToPrint.size()) + '\n';
     for (auto &airport : airportsToPrint)
@@ -72,11 +72,11 @@ void printFlightsByOrderFromAirportToString(const list<Airport> &airportsToPrint
     }
 }
 
-void printDepartingFlightDetailsFSToString(const Flight &flight, string& std_out)
+void printDepartingFlightDetailsFSToString(const Flight &flight, string &std_out)
 {
     std_out = std_out + "Flight #" + flight.get_callsign() + " departing to " + flight.get_destination() + " at " + unix_time_to_date(flight.get_departure_time()) + '\n';
 }
-void printArrivingFlightDetailsFSToString(const Flight &flight, string& std_out)
+void printArrivingFlightDetailsFSToString(const Flight &flight, string &std_out)
 {
     std_out = std_out + "Flight #" + flight.get_callsign() + " arriving from " + flight.get_origin() + " at " + unix_time_to_date(flight.get_arrival_time()) + '\n';
 }

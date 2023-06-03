@@ -1,9 +1,8 @@
-#include "utility.h"
-#include <filesystem>
+#include "reRun.h"
 using namespace std;
 namespace fs = std::filesystem;
 
-int rerun(std::string inputs, const FlightDatabase &DB)
+int reRun(std::string inputs, const FlightDatabase &DB)
 {
     set<string> airports;
     string command = "./flightScanner.sh";
@@ -19,4 +18,5 @@ int rerun(std::string inputs, const FlightDatabase &DB)
         stautsBack = system(command.c_str());
         return EXIT_SUCCESS;
     }
+    return EXIT_SUCCESS;
 }

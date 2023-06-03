@@ -2,6 +2,7 @@
 #include "slib/airplane.h"
 #include "slib/arrivals.h"
 #include "slib/full_schedule.h"
+#include "slib/reRun.h"
 #include "slib/utility.h"
 
 #include <csignal>
@@ -33,7 +34,6 @@ int UserInterface(pid_t &pid, int parentToChild, int childToParent) noexcept(fal
 bool sendTaskToChild(int parentToChild, int OpCode) noexcept(false);
 int receiveTaskFromParent(int childToParent) noexcept(false);
 string receiveMessage(int pipeRead) noexcept(false);
-void sendMessage(int pipeWrite, list<string> strings) noexcept(false);
 void sendMessage(int pipeWrite, string message) noexcept(false);
 void gracefulExit(pid_t childPid);
 
@@ -135,26 +135,23 @@ int LogicProcess(pid_t &pid, int parentToChild, int childToParent) noexcept(fals
          << "Fork created [Process id: " << getpid() << ", [parent process id: " << getppid() << "]." << endl;
     try
     {
-        cout << "CHILD: before flightDB create." << endl;
         FlightDatabase flightDB(true);
-        cout << "CHILD: flightDB created." << endl;
         int opCode = -1;
         while (Running)
         {
-            cout << "CHILD: Starting while loop" << endl; // Debugging
             opCode = receiveTaskFromParent(parentToChild);
-            cout << "CHILD: opCode Received (" << opCode << ")" << endl; // Debugging
             if (opCode == (int)Menu::Exit || (opCode <= (int)Menu::optionStartRange && (int)Menu::optionEndRange <= opCode))
             {
-                // TODO: graceful exit here
                 if (opCode == (int)Menu::Exit)
+                {
+                    FlightDatabase::zipDB();
                     Running = false;
+                }
                 else
                     return EXIT_FAILURE;
             }
             else
             {
-                cout << "CHILD: Before task handler mark" << endl; // Debugging
                 taskHandler(opCode, parentToChild, childToParent, flightDB);
             }
         }
@@ -175,6 +172,7 @@ int UserInterface(pid_t &pid, int parentToChild, int childToParent) noexcept(fal
     int userChoice, status = 0;
     while (Running)
     {
+        // TODO: Add checking if child process still alive and if isnt exit with print exit status and explain.
         sleep(1); // for tests remove at the end.
         printOptions();
         userChoice = getUserDecision((int)Menu::optionStartRange,
@@ -303,23 +301,17 @@ int OptionsHandler(int OpCode, int parentToChild, int childToParent, pid_t &pid)
         case (int)Menu::updateDB:               // Same Logic (Handle and break for 1-3 OpCodes)
         {
             sendTaskToChild(parentToChild, OpCode);
-            cout << "Parent: After sending Child task." << endl;
-            string input = getInputFromUser(); // TODO: Finish this
-            cout << "Parent: After get input from User." << endl;
+            string input = getInputFromUser();
             sendMessage(parentToChild, input);
-            cout << "Parent: After sendMessage of input to Child." << endl;
             std_out = receiveMessage(childToParent);
-            cout << "Parent: After receiveMessage from Child." << endl
-                 << endl
-                 << endl;
-            cout << "Size of std_out " << std_out.size() << endl
-                 << " Text:" << endl;
+            cout << std_out << endl;
             break;
         }
         case (int)Menu::zipDB:
         {
             cout << "Send task to zip flightDB folder to Child Process" << endl;
             sendTaskToChild(parentToChild, OpCode);
+            // TODO: get back finish status
             break;
         }
         case (int)Menu::childPID:
@@ -327,9 +319,21 @@ int OptionsHandler(int OpCode, int parentToChild, int childToParent, pid_t &pid)
             cout << "The Process Child's ID: " << pid << endl;
             break;
         }
-        case (int)Menu::Exit:
+        case (int)Menu::Exit: // Nir Look HERE !
         {
+            int status;
+            pid_t terminated_pid;
             gracefulExit(pid);
+            terminated_pid = waitpid(pid, &status, WUNTRACED); // wait for exit status from child process
+            if (WIFEXITED(status))
+                cout << "Process with PID " << terminated_pid << " terminated with exit status: " << WEXITSTATUS(status) << endl;
+            else if (WIFSTOPPED(status))
+                cout << "Process with PID" << terminated_pid << " stopped" << endl;
+            if (WEXITSTATUS(status) == SIGUSR1)
+            {
+                cout << "Program Exited Successfully." << endl;
+                return EXIT_SUCCESS;
+            }
             break;
         }
     }
@@ -338,27 +342,33 @@ int OptionsHandler(int OpCode, int parentToChild, int childToParent, pid_t &pid)
 
 void taskHandler(int opCode, int parentToChild, int childToParent, FlightDatabase &flightDB) noexcept(false)
 {
+    string args;
+    string std_out;
+    int statusReturned = -1;
+
+    if (opCode == (int)Menu::arrivingFlightsAirport || opCode == (int)Menu::fullScheduleAirport || opCode == (int)Menu::fullScheduleAircraft || opCode == (int)Menu::updateDB)
+        args = receiveMessage(parentToChild);
+
     switch (opCode)
     {
         case (int)Menu::arrivingFlightsAirport:
-        {
-            cout << "CHILD: before receiveMessage for arguemnts." << endl;
-            string args = receiveMessage(parentToChild);
-            cout << "CHILD: after receiveMessage for arguemnts." << endl;
-            string std_out = arrivals(args, flightDB);
-            cout << "CHILD: after arrivals logic, std_out size is " << std_out.size() << endl;
+            std_out = arrivals(args, flightDB);
             sendMessage(childToParent, std_out);
             break;
-        }
         case (int)Menu::fullScheduleAirport:
+            std_out = airplane(args, flightDB);
+            sendMessage(childToParent, std_out);
             break;
         case (int)Menu::fullScheduleAircraft:
+            std_out = full_schedule(args, flightDB);
+            sendMessage(childToParent, std_out);
             break;
         case (int)Menu::updateDB:
+            statusReturned = reRun(args, flightDB);
+            // TODO: return status
             break;
         case (int)Menu::zipDB:
         {
-            cout << "taskHandler - zipDB" << endl;
             flightDB.zipDB();
             break;
         }
@@ -377,10 +387,8 @@ bool sendTaskToChild(int parentToChild, int OpCode) noexcept(false)
 
 int receiveTaskFromParent(int pipeRead) noexcept(false)
 {
-    int OpCode = -1;                                               // if -1 returned will be gracefull exit for undefined OpCode
-    cout << "CHILD: Waiting for receive task from Parent" << endl; // Debugging
+    int OpCode = -1; // if -1 returned will be gracefull exit for undefined OpCode
     size_t bytesRead = read(pipeRead, &OpCode, sizeof(OpCode));
-    cout << "CHILD: Read response is " << bytesRead << " and  OpCode is " << OpCode << endl; // Debugging
     if (bytesRead == -1)
         throw runtime_error("Failed to read task from pipe.");
     return OpCode;
@@ -391,12 +399,10 @@ string receiveMessage(int pipeRead) noexcept(false)
     char buffer[PIPE_BUF];
     int BytesToRead;
     int bytesRead = 0;
-    cout << "Reading - Waiting for message size" << endl;
     bytesRead = read(pipeRead, &BytesToRead, sizeof(BytesToRead));
     if (bytesRead == -1)
         throw runtime_error("Read message from pipe filed!");
 
-    cout << "Reading - need to read " << BytesToRead << ", bytes size readed of the size is " << bytesRead << endl;
     // Read the strings from the child process
     string stringData;
     char chunk[PIPE_BUF];
@@ -404,59 +410,26 @@ string receiveMessage(int pipeRead) noexcept(false)
     {
         int chunkSize = min(PIPE_BUF - 1, BytesToRead);
         int bytesRead = read(pipeRead, chunk, chunkSize);
-        cout << "Reading - size of chunk is " << bytesRead << "/" << chunkSize << endl;
         if (bytesRead > 0)
         {
             chunk[chunkSize] = '\0';
             stringData.append(chunk); // append string
             BytesToRead -= bytesRead;
-            cout << "Reading - Bytes to Read for next read is " << BytesToRead << endl;
         }
         else if (bytesRead == -1)
             throw runtime_error("Read message from pipe filed!");
     }
-    cout << "Reading - Final reached" << endl;
     return stringData;
 }
 
-void sendMessage(int pipeWrite, list<string> strings) noexcept(false)
+void sendMessage(int pipeWrite, string message) noexcept(false)
 {
-    // Send the number of reads and sizes to the parent process
-    int sizesData;
-    for (const string &str : strings)
-        sizesData += str.size();
-    cout << "Sending - size: " << sizesData << endl;
-    if (write(pipeWrite, &sizesData, sizeof(sizesData)) == -1)
-        throw runtime_error("Failed to write Message into pipe!");
-
-    // Send the strings to the pipe
-    for (const auto &str : strings)
-    {
-        int remainingSize = str.size();
-        int offset = 0;
-        // Split the string into smaller chunks if necessary
-        while (remainingSize > 0)
-        {
-            int chunkSize = min(remainingSize, PIPE_BUF);
-            if (write(pipeWrite, str.c_str() + offset, chunkSize) == -1)
-                throw runtime_error("Failed to write Message into pipe!");
-            remainingSize -= chunkSize;
-            offset += chunkSize;
-            cout << "size left after write is " << remainingSize << endl;
-        }
-    }
-}
-
-void sendMessage(int pipeWrite, string message)
-{
-    // Send the number of reads and sizes to the parent process
+    // Sending the size of the message
     int sizesData = message.size();
-    cout << "Sending - message size: " << sizesData << endl;
     if (write(pipeWrite, &sizesData, sizeof(sizesData)) == -1)
         throw runtime_error("Failed to write Message into pipe!");
 
-    // Send the strings to the pipe
-
+    // Send the string to the pipe
     int remainingSize = message.size();
     int offset = 0;
     // Split the string into smaller chunks if necessary
@@ -467,16 +440,8 @@ void sendMessage(int pipeWrite, string message)
             throw runtime_error("Failed to write Message into pipe!");
         remainingSize -= chunkSize;
         offset += chunkSize;
-        cout << "Sending - size left after write is " << remainingSize << endl;
     }
 }
-
-// void sendMessage(int pipeWrite, string message)
-// {
-//     list<string> messageList;
-//     messageList.push_front(message);
-//     sendMessage(pipeWrite, messageList);
-// }
 
 void gracefulExit(pid_t childPid)
 {
