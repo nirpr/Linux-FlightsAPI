@@ -12,10 +12,11 @@ int rerun(std::string inputs, const FlightDatabase &DB)
         airports = DB.get_airports_names();
     }
     else
-    {
-        system("rm -r flightsDB");
+    { // TODO: Handle statusBack
+        int stautsBack;
+        stautsBack = system("rm -r flightsDB");
         command = command + inputs;
-        system(command.c_str());
+        stautsBack = system(command.c_str());
         return EXIT_SUCCESS;
     }
 }

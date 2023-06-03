@@ -28,7 +28,7 @@ void printArrivingFlightDetailsToString(const Flight &flight, std::string &std_o
     std_out += "Flight #" + flight.get_callsign() + " arriving from " + flight.get_origin() + ", took of at " + unix_time_to_date(flight.get_departure_time()) + "landed at " + unix_time_to_date(flight.get_arrival_time()) + '\n';
 }
 
-void printFlightsArrivalFromAirport(const std::list<Airport> &airportsToPrint, std::string &std_out)
+void printFlightsArrivalFromAirportToString(const std::list<Airport> &airportsToPrint, std::string &std_out)
 {
     for (auto &airport : airportsToPrint)
     {

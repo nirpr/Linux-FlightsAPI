@@ -231,8 +231,7 @@ void FlightDatabase::zipDB() noexcept(false)
                 zip_source_t *source = zip_source_file(archive, filePath.c_str(), 0, -1); // create zip_source from file text
                 if (!source)                                                              // Error if can't create zip source
                 {
-                    errors += "Error: create zip 
-                    source for file " + fileName + '\n';
+                    errors += "Error: create zip source for file " + fileName + '\n';
                     continue;
                 }
                 zip_int64_t error = zip_file_add(archive, filePath.c_str(), source, ZIP_FL_ENC_UTF_8); // adding the source to the zip file

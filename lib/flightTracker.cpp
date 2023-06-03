@@ -196,7 +196,8 @@ void signalHandlerParent(int signal_number) // TODO: need to handle signals
     switch (signal_number)
     {
         case SIGINT:
-            cout << "Received SIGINT signal" << endl;
+            cout << endl
+                 << "Received SIGINT signal" << endl;
             gracefulExit(pid); // this is the child's pid
             exit(SIGINT);
             break;
@@ -229,12 +230,13 @@ void signalHandlerChild(int signal_number)
             break;
         case SIGSEGV:
             cout << "Received SIGSEGV signal" << endl;
-            cout << "Segmentation fault occurred. Exiting gracefully" << endl;
+            cerr << "Segmentation fault occurred. Exiting gracefully" << endl;
             FlightDatabase::zipDB();
-            exit(1);
+            exit(SIGSEGV);
             break;
         case SIGUSR1:
-            cout << "zippin and terminating..." << endl;
+            cout << endl
+                 << "zipping and terminating..." << endl;
             FlightDatabase::zipDB();
             exit(SIGUSR1);
             break;
@@ -428,4 +430,22 @@ void sendMessage(int pipeWrite, string message)
 void gracefulExit(pid_t childPid)
 {
     kill(childPid, SIGUSR1);
+}
+
+string getInputFromUser()
+{
+    string arguments;
+    string argument;
+
+    while (true) // loop until the user enters an empty string
+    {
+        cout << "Enter an argument (or press Enter to finish): ";
+        getline(cin, argument);
+
+        if (argument.empty()) // if the input is empty, break the loop
+            break;
+        arguments += argument + " "; // Append the last arguement
+    }
+    arguments.erase(arguments.find_last_not_of(" \t\n\r\f\v") + 1); // remove whitespaces from end of string
+    return arguments;
 }

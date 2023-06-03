@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.13) # CMake version check
-project("FlightTracker" VERSION 1.1)
+project(FlightTracker VERSION 1.1)
 
 # CPP BUILD Settings
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -11,13 +11,21 @@ set(CMAKE_BUILD_TYPE Release)
 # Source files register
 set(SOURCE_FILES
     lib/flightTracker.cpp
-    lib/slib/airplane.cpp
     lib/slib/airport.cpp
-    lib/slib/flight.cpp
     lib/slib/flightDB.cpp
-    lib/slib/full_schedule.cpp
-    lib/slib/reRun.cpp
+    lib/slib/flight.cpp
     lib/slib/utility.cpp
+    lib/slib/airplane.cpp
+    lib/slib/arrivals.cpp
+    lib/slib/full_schedule.cpp
+
+    # lib/slib/reRun.cpp
 )
 
 add_executable(runMe.out ${SOURCE_FILES})
+
+# Find the libzip library
+find_library(LIBZIP zip REQUIRED)
+
+# Link the libzip library to your project
+target_link_libraries(runMe.out PRIVATE ${LIBZIP})
