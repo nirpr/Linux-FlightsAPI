@@ -86,6 +86,7 @@ int main(int argc, char **argv)
             // UI - Parent Handling
             returnedStatus = UserInterface(pid, parentToChild[WRITE_END], childToParent[READ_END]); // Handle UI
             pipeCleanUp(parentToChild, childToParent);                                              // Close the pipes between Parent and Child}
+            waitpid(pid, NULL, 0);
             return returnedStatus;
         }
         else if (pid == 0) // Child
@@ -314,7 +315,7 @@ int OptionsHandler(int OpCode, int parentToChild, int childToParent, pid_t &pid)
         }
         case (int)Menu::Exit:
         {
-            // TODO: Graceful Exit
+            gracefulExit(pid);
             break;
         }
     }
@@ -429,7 +430,10 @@ void sendMessage(int pipeWrite, string message)
 
 void gracefulExit(pid_t childPid)
 {
-    kill(childPid, SIGUSR1);
+    if (kill(childPid, SIGUSR1) == 0)
+        cout << "SIGUSR1 signal sent to child process." << endl;
+    else
+        cout << "Failed to send SIGUSR1 signal to child process."  <<  endl;
 }
 
 string getInputFromUser()
