@@ -3,7 +3,7 @@ using namespace std;
 namespace fs = std::filesystem;
 
 // Methods
-FlightDatabase::FlightDatabase(bool loadfromZip=false) noexcept(false) : loaded(false)
+FlightDatabase::FlightDatabase(bool loadfromZip = false) noexcept(false) : loaded(false)
 {
     if (loadfromZip)
     {
@@ -33,7 +33,7 @@ FlightDatabase::FlightDatabase(bool loadfromZip=false) noexcept(false) : loaded(
     }
 }
 
-void FlightDatabase::load_DB_from_folder(string& infoString,bool reRun = false) noexcept(false)
+void FlightDatabase::load_DB_from_folder(string &infoString, bool reRun) noexcept(false)
 {
     if (reRun) // in case of rerunning the proggram all of the excisting airports will be deleted.
         this->Airports.clear();
@@ -42,7 +42,7 @@ void FlightDatabase::load_DB_from_folder(string& infoString,bool reRun = false) 
         load_db(file_itr.path().filename().string(), infoString);
 }
 
-bool FlightDatabase::load_db(const string &airportCode, string& infoString) noexcept(false)
+bool FlightDatabase::load_db(const string &airportCode, string &infoString) noexcept(false)
 {
     string airportPathDB(DB_PATH);
     // adding flightsDB directory
@@ -174,7 +174,7 @@ const list<Airport> FlightDatabase::get_flights_by_airport_name(const set<string
             if (((ToFromBoth == (int)Directions::arriving || ToFromBoth == (int)Directions::both) && (airport.get_num_flightsArv() != 0)) ||
                 ((ToFromBoth == (int)Directions::destinations || ToFromBoth == (int)Directions::both) && (airport.get_num_flightsDpt() != 0)))
                 airportsRequired.push_back(airport);
-            
+
     return airportsRequired;
 }
 

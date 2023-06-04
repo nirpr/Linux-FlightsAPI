@@ -3,6 +3,7 @@
 #include "utility.h"
 
 std::string airplane(std::string inputs, const FlightDatabase &DB);
-void printFlightsByAirplanesToString(const FlightDatabase &DB, std::set<std::string> airplanes, std::string &std_out);
+void printFlightsByAirplanesToString(const FlightDatabase &DB, std::set<std::string> airplanes, std::string &std_out,  std::string& std_Error);
 void printAirplaneFlightDetailsToString(const Flight &flight, std::string &std_out);
+
 #endif

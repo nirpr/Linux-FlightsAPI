@@ -9,16 +9,9 @@ set(CMAKE_BUILD_TYPE Release)
 # set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 
 # Source files register
-set(SOURCE_FILES
-    lib/flightTracker.cpp
-    lib/slib/airport.cpp
-    lib/slib/flightDB.cpp
-    lib/slib/flight.cpp
-    lib/slib/utility.cpp
-    lib/slib/airplane.cpp
-    lib/slib/arrivals.cpp
-    lib/slib/full_schedule.cpp
-    lib/slib/reRun.cpp
+file(GLOB_RECURSE SOURCE_FILES
+    "lib/*.cpp"
+    "lib/slib/*.cpp"
 )
 
 add_executable(runMe.out ${SOURCE_FILES})

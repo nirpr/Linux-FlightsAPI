@@ -25,30 +25,21 @@ string airplane(string inputs, const FlightDatabase &DB)
     return std_out;
 }
 
-
-void printAirplaneFlightDetailsToString(const Flight &flight, string& sdt_out)
+void printAirplaneFlightDetailsToString(const Flight &flight, string &sdt_out)
 {
-    sdt_out = sdt_out + flight.get_icao24() + " "
-         + "departed from"
-         + " " + flight.get_origin() +" "
-         + "at"
-         + " " + unix_time_to_date(flight.get_departure_time()) + " "
-         + "arrived in"
-         + " " + flight.get_destination() + " "
-         + "at"
-         + " " + unix_time_to_date(flight.get_arrival_time()) + '\n';
-    
+    sdt_out = sdt_out + flight.get_icao24() + " " + "departed from" + " " + flight.get_origin() + " " + "at" + " " + unix_time_to_date(flight.get_departure_time()) + " " + "arrived in" + " " + flight.get_destination() + " " + "at" + " " + unix_time_to_date(flight.get_arrival_time()) + '\n';
+
     return;
 }
 
-void printFlightsByAirplanesToString(const FlightDatabase &DB, set<string> airplanes, string& std_out,  string& std_Error)
+void printFlightsByAirplanesToString(const FlightDatabase &DB, set<string> airplanes, string &std_out, string &std_Error)
 {
-    for(const auto& airplane:airplanes)
+    for (const auto &airplane : airplanes)
     {
         set<Flight> flights = DB.getAirplanes(airplane); // need to get only arrivels
         if (flights.size() == 0)
         {
-            //TODO airplane bla bla has no flights.
+            // TODO: airplane bla bla has no flights.
         }
         for (auto &flight : flights)
         {
