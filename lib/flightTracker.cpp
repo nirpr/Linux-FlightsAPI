@@ -20,6 +20,7 @@ using namespace std;
 
 pid_t pid = -1; // global so we can access the child's pid whenever we need
 
+
 // Function Declerations
 void printOptions();
 void pipeCleanUp(int parentToChild[2], int childToParent[2]);
@@ -60,8 +61,8 @@ enum class Menu
 int main(int argc, char **argv)
 {
     cout << "Program is starting" << endl;
-    // ---- First Pipe setup ----
     int parentToChild[2] = {0, 0}, childToParent[2] = {0, 0}; // create pipes for communication
+    // ---- First Pipe setup ----
     if (pipe(parentToChild) == -1 || pipe(childToParent) == -1)
     {
         cerr << "Failed to create pipe." << endl;
@@ -94,8 +95,8 @@ int main(int argc, char **argv)
             // Child Pipe Setup Continue
             close(parentToChild[WRITE_END]); // Child dont write to this pipe
             close(childToParent[READ_END]);  // Child dont read from this pipe
-
             // Child Signals Setup
+            signal(SIGINT, signalHandlerChild); // register SIGINT to ignore and handle from the parent
             signal(SIGUSR1, signalHandlerChild); // Register SIGUSR1 of Child
 
             // Logic Process - Child Handling
@@ -228,7 +229,7 @@ void signalHandlerChild(int signal_number)
     switch (signal_number)
     {
         case SIGINT:
-            cout << "Received SIGINT signal" << endl;
+            cout << "recived SIGINT, ignoring" << endl;
             break;
         case SIGTERM:
             cout << "Received SIGTERM signal" << endl;
@@ -445,10 +446,15 @@ void sendMessage(int pipeWrite, string message) noexcept(false)
 
 void gracefulExit(pid_t childPid)
 {
+    int closer = 0;
     if (kill(childPid, SIGUSR1) == 0)
         cout << "SIGUSR1 signal sent to child process." << endl;
     else
         cout << "Failed to send SIGUSR1 signal to child process." << endl;
+    int status;
+    pid_t terminated_pid = waitpid(childPid, &status, WUNTRACED);
+
+    cout << "child status: " << WEXITSTATUS(status) << endl;
 }
 
 string getInputFromUser()
