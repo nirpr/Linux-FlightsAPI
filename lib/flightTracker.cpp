@@ -5,6 +5,7 @@
 #include "slib/reRun.h"
 #include "slib/utility.h"
 
+#include <cerrno>
 #include <csignal>
 #include <iostream>
 #include <limits.h> // used for get PIPE_BUFF
@@ -86,7 +87,6 @@ int main(int argc, char **argv)
             // UI - Parent Handling
             returnedStatus = UserInterface(pid, parentToChild[WRITE_END], childToParent[READ_END]); // Handle UI
             pipeCleanUp(parentToChild, childToParent);                                              // Close the pipes between Parent and Child}
-            waitpid(pid, NULL, 0);
             return returnedStatus;
         }
         else if (pid == 0) // Child
@@ -131,15 +131,15 @@ int main(int argc, char **argv)
 int LogicProcess(pid_t &pid, int parentToChild, int childToParent) noexcept(false)
 {
     bool Running = true;
-    cout << endl
-         << "Fork created [Process id: " << getpid() << ", [parent process id: " << getppid() << "]." << endl;
     try
     {
         FlightDatabase flightDB(true);
-        // Opening Message 
+        // Opening Message for Parent
+        sendMessage(childToParent, "Child Process: Ready !\n");
         int opCode = -1;
         while (Running)
         {
+            cout << "Child: Start loop" << endl;
             opCode = receiveCodeFromPipe(parentToChild);
             if (opCode == (int)Menu::Exit || (opCode <= (int)Menu::optionStartRange && (int)Menu::optionEndRange <= opCode))
             {
@@ -149,7 +149,10 @@ int LogicProcess(pid_t &pid, int parentToChild, int childToParent) noexcept(fals
                     Running = false;
                 }
                 else
+                {
+                    sendMessage(childToParent, "Error: Unknown option recieved to Child, Program Exited.");
                     return EXIT_FAILURE;
+                }
             }
             else
             {
@@ -159,7 +162,9 @@ int LogicProcess(pid_t &pid, int parentToChild, int childToParent) noexcept(fals
     }
     catch (const exception &e)
     {
-        cout << e.what() << endl; // TODO: Delete later (child can't print | maybe pass message to parent)
+        int errorCode = errno;
+        if (!(errorCode == EBADF || errorCode == EIO || errorCode == ENOSPC || errorCode == EPIPE)) // Check if failed isn't in pipes
+            sendMessage(childToParent, e.what());
         return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;
@@ -171,10 +176,22 @@ int UserInterface(pid_t &pid, int parentToChild, int childToParent) noexcept(fal
          << "This is parent section [Process id: " << getpid() << "] , [child's id: " << pid << "]." << endl;
     bool Running = true;
     int userChoice, returnedStatus = EXIT_FAILURE; // returnedStatus default fail till Option Handler return something
+    int child_status;
+    pid_t result;
+    // Reading opening message for Parent from Child
+    string openMsg = receiveMessage(childToParent);
+    cout << openMsg << endl;
+    // UI - Main Loop
     while (Running)
     {
-        // TODO: Add checking if child process still alive and if isnt exit with print exit status and explain.
-        sleep(1); // for tests remove at the end.
+        // 4cout << "Befroe waitpid" << endl;
+        //  if (!waitpid(pid, &child_status, WNOHANG | WUNTRACED | WCONTINUED)) // check that child is still alive without blocking
+        //  {
+        //      cerr << receiveMessage(childToParent) << endl;                          // Printing the error of the child
+        //      cerr << "Error: Child process failed, Exit from the program !" << endl; // Announce program will close.
+        //      return EXIT_FAILURE;
+        //  }
+        // cout << "After waitpid" << endl;
         printOptions();
         userChoice = getUserDecision((int)Menu::optionStartRange,
                                      (int)Menu::optionEndRange,
