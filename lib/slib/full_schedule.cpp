@@ -22,9 +22,8 @@ string full_schedule(string inputs, const FlightDatabase &DB)
 
     if (AirportsRequired.size() < 1)
     {
-        cout << endl
-             << "All the airport that required to print are not valid airports." << endl;
-        return EXIT_SUCCESS;
+        std_out += "INFO: All the airport that required to print are not valid airports.\n";
+        return std_out;
     }
 
     printFlightsByOrderFromAirportToString(AirportsRequired, std_out);

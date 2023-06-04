@@ -136,6 +136,7 @@ int LogicProcess(pid_t &pid, int parentToChild, int childToParent) noexcept(fals
     try
     {
         FlightDatabase flightDB(true);
+        // Opening Message 
         int opCode = -1;
         while (Running)
         {
@@ -361,6 +362,7 @@ void taskHandler(int opCode, int parentToChild, int childToParent, FlightDatabas
 {
     string args;
     string std_out;
+    string errors;
     int statusReturned = -1;
 
     if (opCode == (int)Menu::arrivingFlightsAirport || opCode == (int)Menu::fullScheduleAirport || opCode == (int)Menu::fullScheduleAircraft || opCode == (int)Menu::updateDB)
@@ -381,15 +383,14 @@ void taskHandler(int opCode, int parentToChild, int childToParent, FlightDatabas
             sendMessage(childToParent, std_out);
             break;
         case (int)Menu::updateDB:
-            statusReturned = reRun(args, flightDB);
+            statusReturned = reRun(args, flightDB, errors);
             sendCodeToPipe(childToParent, statusReturned);
+            // TODO: Handle errors send and recieve in parent
             break;
         case (int)Menu::zipDB:
-        {
             flightDB.zipDB();
             sendCodeToPipe(childToParent, EXIT_SUCCESS);
             break;
-        }
         default:
             break;
     }

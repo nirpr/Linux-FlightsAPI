@@ -2,7 +2,7 @@
 using namespace std;
 namespace fs = std::filesystem;
 
-int reRun(std::string inputs, FlightDatabase &DB)
+int reRun(const string& inputs, FlightDatabase &DB, string& errorStrOut)
 {
     int stautsBack;
     set<string> airports;
@@ -22,6 +22,15 @@ int reRun(std::string inputs, FlightDatabase &DB)
         command = command + inputs; // Adding the inputs to the command
 
     stautsBack = system(command.c_str());
-    DB.load_DB_from_folder(true);
+    string infoString;
+    try
+    {
+        DB.load_DB_from_folder(infoString, true);
+    }
+    catch (const exception& e)
+    {
+        errorStrOut += e.what() + '\n';
+    }
+    errorStrOut += infoString; // Append the info String to output infoString
     return stautsBack;
 }

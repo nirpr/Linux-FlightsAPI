@@ -3,14 +3,15 @@ using namespace std;
 namespace fs = std::filesystem;
 
 // Methods
-FlightDatabase::FlightDatabase(bool loadfromZip) noexcept(false) : loaded(false)
+FlightDatabase::FlightDatabase(bool loadfromZip=false) noexcept(false) : loaded(false)
 {
     if (loadfromZip)
     {
+        string infoString; // dummy string not needed to print from unzip
         try
         {
             FlightDatabase::unzipDB();
-            load_DB_from_folder(false);
+            load_DB_from_folder(infoString);
             loaded = true;
         }
         catch (const fs::filesystem_error &e)
@@ -18,19 +19,30 @@ FlightDatabase::FlightDatabase(bool loadfromZip) noexcept(false) : loaded(false)
             if (e.code().value() != (int)errc::no_such_file_or_directory) // ignore if zip file not exist
                 throw e;
         }
+
+        try
+        {
+            load_DB_from_folder(infoString);
+            loaded = true;
+        }
+        catch (const fs::filesystem_error &e)
+        {
+            if (e.code().value() != (int)std_error::_Path_not_found) // ignore if zip file not exist
+                throw e;
+        }
     }
 }
 
-void FlightDatabase::load_DB_from_folder(bool reRun = false) noexcept(false)
+void FlightDatabase::load_DB_from_folder(string& infoString,bool reRun = false) noexcept(false)
 {
     if (reRun) // in case of rerunning the proggram all of the excisting airports will be deleted.
         this->Airports.clear();
 
     for (const auto &file_itr : fs::directory_iterator(DB_PATH))
-        load_db(file_itr.path().filename().string());
+        load_db(file_itr.path().filename().string(), infoString);
 }
 
-bool FlightDatabase::load_db(const string &airportCode) noexcept(false)
+bool FlightDatabase::load_db(const string &airportCode, string& infoString) noexcept(false)
 {
     string airportPathDB(DB_PATH);
     // adding flightsDB directory
@@ -57,11 +69,11 @@ bool FlightDatabase::load_db(const string &airportCode) noexcept(false)
         }
         if (arv == false)
         {
-            errors += string("INFO: There are no arrivals to ") += string(airportCode) += " Airport.\n";
+            infoString += string("INFO: There are no arrivals to ") += string(airportCode) += " Airport.\n";
         }
         if (dst == false)
         {
-            errors += string("INFO: There are no departures to ") += string(airportCode) += " Airport.\n";
+            infoString += string("INFO: There are no departures to ") += string(airportCode) += " Airport.\n";
         }
     }
     catch (const fs::filesystem_error &e)
@@ -82,8 +94,6 @@ bool FlightDatabase::load_db(const string &airportCode) noexcept(false)
             throw runtime_error(errors);
         }
     }
-    // if (!arv || !dst)  Maybe need to remove it
-    //     throw runtime_error(errors);
     return true;
 }
 
@@ -161,8 +171,10 @@ const list<Airport> FlightDatabase::get_flights_by_airport_name(const set<string
 
     for (auto &airport : this->Airports)
         if (airports_names.count(airport.get_name()))
-            airportsRequired.push_back(airport);
-
+            if (((ToFromBoth == (int)Directions::arriving || ToFromBoth == (int)Directions::both) && (airport.get_num_flightsArv() != 0)) ||
+                ((ToFromBoth == (int)Directions::destinations || ToFromBoth == (int)Directions::both) && (airport.get_num_flightsDpt() != 0)))
+                airportsRequired.push_back(airport);
+            
     return airportsRequired;
 }
 

@@ -17,6 +17,12 @@ string arrivals(string inputs, const FlightDatabase &DB)
         ICAOcodes.insert(arg);
 
     list<Airport> airportLst = DB.get_flights_by_airport_name(ICAOcodes, (int)FlightDatabase::Directions::arriving);
+    
+    if (airportLst.size() < 1)
+    {
+        std_out += "INFO: All the airport that required to print are not valid airports.\n";
+        return std_out;
+    }
     printFlightsArrivalFromAirportToString(airportLst, std_out);
     return std_out; // return the final print
 }

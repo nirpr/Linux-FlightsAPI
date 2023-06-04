@@ -3,6 +3,6 @@
 #include "utility.h"
 #include <filesystem>
 
-int reRun(std::string inputs, FlightDatabase &DB);
+int reRun(const std::string& inputs, FlightDatabase &DB, std::string& errorStrOut);
 
 #endif
