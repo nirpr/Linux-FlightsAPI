@@ -31,8 +31,8 @@ int LogicProcess(pid_t &pid, int parentToChild, int childToParent) noexcept(fals
 int OptionsHandler(int OpCode, int parentToChild, int childToParent, pid_t &pid) noexcept(false);
 void taskHandler(int opCode, int parentToChild, int childToParent, FlightDatabase &flightDB) noexcept(false);
 int UserInterface(pid_t &pid, int parentToChild, int childToParent) noexcept(false);
-bool sendTaskToChild(int parentToChild, int OpCode) noexcept(false);
-int receiveTaskFromParent(int childToParent) noexcept(false);
+bool sendCodeToPipe(int writePipe, int OpCode) noexcept(false);
+int receiveCodeFromPipe(int childToParent) noexcept(false);
 string receiveMessage(int pipeRead) noexcept(false);
 void sendMessage(int pipeWrite, string message) noexcept(false);
 void gracefulExit(pid_t childPid);
@@ -139,7 +139,7 @@ int LogicProcess(pid_t &pid, int parentToChild, int childToParent) noexcept(fals
         int opCode = -1;
         while (Running)
         {
-            opCode = receiveTaskFromParent(parentToChild);
+            opCode = receiveCodeFromPipe(parentToChild);
             if (opCode == (int)Menu::Exit || (opCode <= (int)Menu::optionStartRange && (int)Menu::optionEndRange <= opCode))
             {
                 if (opCode == (int)Menu::Exit)
@@ -169,7 +169,7 @@ int UserInterface(pid_t &pid, int parentToChild, int childToParent) noexcept(fal
     cout << endl
          << "This is parent section [Process id: " << getpid() << "] , [child's id: " << pid << "]." << endl;
     bool Running = true;
-    int userChoice, status = 0;
+    int userChoice, returnedStatus = EXIT_FAILURE; // returnedStatus default fail till Option Handler return something
     while (Running)
     {
         // TODO: Add checking if child process still alive and if isnt exit with print exit status and explain.
@@ -178,11 +178,11 @@ int UserInterface(pid_t &pid, int parentToChild, int childToParent) noexcept(fal
         userChoice = getUserDecision((int)Menu::optionStartRange,
                                      (int)Menu::optionEndRange,
                                      (int)ProgramSettings::MaxInputAttempts);
-        OptionsHandler(userChoice, parentToChild, childToParent, pid);
+        returnedStatus = OptionsHandler(userChoice, parentToChild, childToParent, pid);
         if (userChoice == (int)Menu::Exit)
             Running = false;
     }
-    return EXIT_SUCCESS;
+    return returnedStatus;
 }
 
 void pipeCleanUp(int parentToChild[2], int childToParent[2])
@@ -292,26 +292,43 @@ int getUserDecision(int startRange, int endRange, int maxTimes)
 int OptionsHandler(int OpCode, int parentToChild, int childToParent, pid_t &pid) noexcept(false) // TODO: Finish Handling logics for parents
 {
     string std_out;
+    int returnStatus;
     switch (OpCode)
     {
         // Same Functionality for 1-4
         case (int)Menu::arrivingFlightsAirport: // Same Logic (NO Break)
         case (int)Menu::fullScheduleAirport:    // Same Logic (NO Break)
-        case (int)Menu::fullScheduleAircraft:   // Same Logic (NO Break)
-        case (int)Menu::updateDB:               // Same Logic (Handle and break for 1-3 OpCodes)
+        case (int)Menu::fullScheduleAircraft:   // Same Logic (Handle for 1-3 OpCodes)
         {
-            sendTaskToChild(parentToChild, OpCode);
+            sendCodeToPipe(parentToChild, OpCode);
             string input = getInputFromUser();
             sendMessage(parentToChild, input);
             std_out = receiveMessage(childToParent);
             cout << std_out << endl;
             break;
         }
+        case (int)Menu::updateDB: // Same Logic (Handle and break for 1-3 OpCodes)
+        {
+            sendCodeToPipe(parentToChild, OpCode);
+            string input = getInputFromUser();
+            sendMessage(parentToChild, input);
+            cout << "Waiting for DB update." << endl;
+            returnStatus = receiveCodeFromPipe(childToParent);
+            if (returnStatus == EXIT_SUCCESS)
+                cout << "DB Updated successfully" << endl;
+            else if (returnStatus == EXIT_FAILURE)
+                cout << "DB Update failed." << endl;
+            return returnStatus;
+        }
         case (int)Menu::zipDB:
         {
             cout << "Send task to zip flightDB folder to Child Process" << endl;
-            sendTaskToChild(parentToChild, OpCode);
-            // TODO: get back finish status
+            sendCodeToPipe(parentToChild, OpCode);
+            returnStatus = receiveCodeFromPipe(childToParent);
+            if (returnStatus == EXIT_SUCCESS)
+                cout << "DB Zipped successfully" << endl;
+            else if (returnStatus == EXIT_FAILURE)
+                cout << "DB Zip failed." << endl;
             break;
         }
         case (int)Menu::childPID:
@@ -319,7 +336,7 @@ int OptionsHandler(int OpCode, int parentToChild, int childToParent, pid_t &pid)
             cout << "The Process Child's ID: " << pid << endl;
             break;
         }
-        case (int)Menu::Exit: // Nir Look HERE !
+        case (int)Menu::Exit:
         {
             int status;
             pid_t terminated_pid;
@@ -332,7 +349,7 @@ int OptionsHandler(int OpCode, int parentToChild, int childToParent, pid_t &pid)
             if (WEXITSTATUS(status) == SIGUSR1)
             {
                 cout << "Program Exited Successfully." << endl;
-                return EXIT_SUCCESS;
+                return SIGINT;
             }
             break;
         }
@@ -365,11 +382,12 @@ void taskHandler(int opCode, int parentToChild, int childToParent, FlightDatabas
             break;
         case (int)Menu::updateDB:
             statusReturned = reRun(args, flightDB);
-            // TODO: return status
+            sendCodeToPipe(childToParent, statusReturned);
             break;
         case (int)Menu::zipDB:
         {
             flightDB.zipDB();
+            sendCodeToPipe(childToParent, EXIT_SUCCESS);
             break;
         }
         default:
@@ -377,15 +395,15 @@ void taskHandler(int opCode, int parentToChild, int childToParent, FlightDatabas
     }
 }
 
-bool sendTaskToChild(int parentToChild, int OpCode) noexcept(false)
+bool sendCodeToPipe(int writePipe, int OpCode) noexcept(false)
 {
-    ssize_t bytesWritten = write(parentToChild, &OpCode, sizeof(OpCode));
+    ssize_t bytesWritten = write(writePipe, &OpCode, sizeof(OpCode));
     if (bytesWritten == -1)
-        throw runtime_error("Failed to write to child.");
+        throw runtime_error("Failed write to Pipe.");
     return true;
 }
 
-int receiveTaskFromParent(int pipeRead) noexcept(false)
+int receiveCodeFromPipe(int pipeRead) noexcept(false)
 {
     int OpCode = -1; // if -1 returned will be gracefull exit for undefined OpCode
     size_t bytesRead = read(pipeRead, &OpCode, sizeof(OpCode));
@@ -445,10 +463,29 @@ void sendMessage(int pipeWrite, string message) noexcept(false)
 
 void gracefulExit(pid_t childPid)
 {
+    int status;
+    pid_t terminated_pid;
+    cout << "Child PID: " << childPid << endl;
+    terminated_pid = waitpid(pid, &status, WNOHANG); // wait for exit status from child process
+    if (WIFEXITED(status))
+        cout << "Process with PID " << terminated_pid << " terminated with exit status: " << WEXITSTATUS(status) << endl;
+    else if (WIFSTOPPED(status))
+        cout << "Process with PID" << terminated_pid << " blocked to read" << endl;
+    else
+        cout << "Process with PID" << terminated_pid << " not blocked to read" << endl;
+
     if (kill(childPid, SIGUSR1) == 0)
         cout << "SIGUSR1 signal sent to child process." << endl;
     else
         cout << "Failed to send SIGUSR1 signal to child process." << endl;
+
+    terminated_pid = waitpid(pid, &status, WNOHANG); // wait for exit status from child process
+    if (WIFEXITED(status))
+        cout << "Process with PID " << terminated_pid << " terminated with exit status: " << WEXITSTATUS(status) << endl;
+    else if (WIFSTOPPED(status))
+        cout << "Process with PID" << terminated_pid << " blocked to read" << endl;
+    else
+        cout << "Process with PID" << terminated_pid << " not blocked to read" << endl;
 }
 
 string getInputFromUser()

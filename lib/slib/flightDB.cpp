@@ -10,7 +10,7 @@ FlightDatabase::FlightDatabase(bool loadfromZip) noexcept(false) : loaded(false)
         try
         {
             FlightDatabase::unzipDB();
-            load_DB_from_folder();
+            load_DB_from_folder(false);
             loaded = true;
         }
         catch (const fs::filesystem_error &e)
@@ -23,11 +23,9 @@ FlightDatabase::FlightDatabase(bool loadfromZip) noexcept(false) : loaded(false)
 
 void FlightDatabase::load_DB_from_folder(bool reRun = false) noexcept(false)
 {
-    // in case of rerunning the proggram all of the excisting airports will be deleted.
-    if(reRun)
-    {
-        airports.clear();
-    }
+    if (reRun) // in case of rerunning the proggram all of the excisting airports will be deleted.
+        this->Airports.clear();
+
     for (const auto &file_itr : fs::directory_iterator(DB_PATH))
         load_db(file_itr.path().filename().string());
 }

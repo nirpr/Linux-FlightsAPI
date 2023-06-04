@@ -52,12 +52,12 @@ class FlightDatabase
     };
     enum class Directions
     {
-        arriving,   
+        arriving,
         destinations,
         both
     };
     FlightDatabase(bool loadfromZip) noexcept(false);
-    void load_DB_from_folder() noexcept(false);
+    void load_DB_from_folder(bool reRun) noexcept(false);
     bool load_db(const std::string &airportCode) noexcept(false);
     const std::list<Airport> get_flights_by_airport_name(const std::set<std::string> &airport_name, int ToFromBoth) const;
     std::set<std::string> get_airports_names() const;
