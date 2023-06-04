@@ -21,8 +21,13 @@ FlightDatabase::FlightDatabase(bool loadfromZip) noexcept(false) : loaded(false)
     }
 }
 
-void FlightDatabase::load_DB_from_folder() noexcept(false)
+void FlightDatabase::load_DB_from_folder(bool reRun = false) noexcept(false)
 {
+    // in case of rerunning the proggram all of the excisting airports will be deleted.
+    if(reRun)
+    {
+        airports.clear();
+    }
     for (const auto &file_itr : fs::directory_iterator(DB_PATH))
         load_db(file_itr.path().filename().string());
 }

@@ -3,8 +3,9 @@
 using namespace std;
 namespace fs = std::filesystem;
 
-int rerun(std::string inputs, const FlightDatabase &DB)
+int rerun(std::string inputs, FlightDatabase& DB)
 {
+    bool rerun = true;
     set<string> airports;
     string command = "./flightScanner.sh";
     if (inputs.size() == 0)
@@ -14,8 +15,10 @@ int rerun(std::string inputs, const FlightDatabase &DB)
     else
     {
         system("rm -r flightsDB");
+        system("rm flightsDB.zip")
         command = command + inputs;
         system(command.c_str());
+        DB.load_db(rerun)
         return EXIT_SUCCESS;
     }
 }

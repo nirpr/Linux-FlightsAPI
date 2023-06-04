@@ -5,9 +5,9 @@
 #include <iostream>
 #include <set>
 
-void printFlightsByOrderFromAirportToString(const list<Airport> &airportsToPrint,string& std_out);
-void printArrivingFlightDetailsFSToString(const Flight &flight, string& std_out);
-void printDepartingFlightDetailsFSToString(const Flight &flight, string& std_out);
+void printFlightsByOrderFromAirportToString(const std::list<Airport> &airportsToPrint, std::string& std_out);
+void printArrivingFlightDetailsFSToString(const Flight &flight, std::string& std_out);
+void printDepartingFlightDetailsFSToString(const Flight &flight, std::string& std_out);
 
 
 #endif
