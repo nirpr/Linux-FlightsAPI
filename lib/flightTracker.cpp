@@ -48,8 +48,8 @@ enum class Menu
 {
     optionStartRange,
     arrivingFlightsAirport,
-    fullScheduleAircraft,
     fullScheduleAirport,
+    fullScheduleAircraft,
     updateDB,
     zipDB,
     childPID,
@@ -289,8 +289,8 @@ void printOptions()
 {
     cout << "~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~" << endl;
     cout << "1 - Fetch airports incoming flights." << endl;
-    cout << "2 - Fetch aircraft full flights schedule." << endl;
-    cout << "3 - Fetch airports full flights schedule." << endl;
+    cout << "2 - Fetch airports full flights schedule." << endl;
+    cout << "3 - Fetch aircraft full flights schedule." << endl;
     cout << "4 - Update DB." << endl;
     cout << "5 - Zip DB files." << endl;
     cout << "6 - Get child process PID." << endl;
@@ -332,8 +332,8 @@ int OptionsHandler(int OpCode, int parentToChild, int childToParent, pid_t &pid)
     {
         // Same Functionality for 1-4
         case (int)Menu::arrivingFlightsAirport: // Same Logic (NO Break)
-        case (int)Menu::fullScheduleAircraft:   // Same Logic (NO Break)
-        case (int)Menu::fullScheduleAirport:    // Same Logic (Handle for 1-3 OpCodes)
+        case (int)Menu::fullScheduleAirport:    // Same Logic (NO Break)
+        case (int)Menu::fullScheduleAircraft:   // Same Logic (Handle for 1-3 OpCodes)
         {
             sendCodeToPipe(parentToChild, OpCode);
             string input = getInputFromUser();
@@ -409,13 +409,14 @@ void taskHandler(int opCode, int parentToChild, int childToParent, FlightDatabas
             sendMessage(childToParent, std_out);
             break;
         case (int)Menu::fullScheduleAirport:
-            std_out = airplane(args, flightDB);
-            sendMessage(childToParent, std_out);
-            break;
-        case (int)Menu::fullScheduleAircraft:
             std_out = full_schedule(args, flightDB);
             sendMessage(childToParent, std_out);
             break;
+        case (int)Menu::fullScheduleAircraft:
+            std_out = airplane(args, flightDB);
+            sendMessage(childToParent, std_out);
+            break;
+
         case (int)Menu::updateDB:
             statusReturned = reRun(args, flightDB, errors);
             sendCodeToPipe(childToParent, statusReturned);
