@@ -302,6 +302,7 @@ int getUserDecision(int startRange, int endRange, int maxTimes)
 {
     int UserDecision, timesFailed = 0;
     cin >> UserDecision;
+    cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Clear buffer
     while ((UserDecision <= startRange || endRange <= UserDecision) && timesFailed < maxTimes)
     {
         timesFailed++;
@@ -312,7 +313,7 @@ int getUserDecision(int startRange, int endRange, int maxTimes)
         cout << "Fail "
              << timesFailed << "/"
              << maxTimes
-             << "Your choice is invalid, please try again <" << startRange << "-" << endRange << "> : ";
+             << "Your choice is invalid, please try again <" << startRange - 1 << "-" << endRange - 1 << "> : ";
         cin >> UserDecision;
     }
     if (timesFailed == maxTimes)
