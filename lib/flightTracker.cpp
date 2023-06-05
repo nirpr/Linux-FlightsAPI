@@ -173,15 +173,39 @@ int UserInterface(pid_t &pid, int parentToChild, int childToParent) noexcept(fal
     int userChoice, status = 0;
     while (Running)
     {
-        // TODO: Add checking if child process still alive and if isnt exit with print exit status and explain.
-        sleep(1); // for tests remove at the end.
-        printOptions();
-        userChoice = getUserDecision((int)Menu::optionStartRange,
-                                     (int)Menu::optionEndRange,
-                                     (int)ProgramSettings::MaxInputAttempts);
-        OptionsHandler(userChoice, parentToChild, childToParent, pid);
-        if (userChoice == (int)Menu::Exit)
-            Running = false;
+        int status;
+        pid_t result = waitpid(pid, &status, WNOHANG);
+        if (result == -1)
+        {
+            cerr << "Error occurred while waiting for child process" << endl;
+            return EXIT_FAILURE;
+        }
+        else if (result == 0)
+        {
+            cout << "child is still alive" << endl;
+            sleep(1); // for tests remove at the end.
+            printOptions();
+            userChoice = getUserDecision((int)Menu::optionStartRange,
+                                         (int)Menu::optionEndRange,
+                                         (int)ProgramSettings::MaxInputAttempts);
+            OptionsHandler(userChoice, parentToChild, childToParent, pid);
+            if (userChoice == (int)Menu::Exit)
+                Running = false;
+        }
+        else
+        {
+            if (WIFEXITED(status)) // child process exited normaly
+                {
+                    int exitStatus = WEXITSTATUS(status);
+                    cout << "child process exited with status: " << exitStatus << endl;
+                }
+            else if (WIFSIGNALED(status)) // child process terminated
+            {
+                 int signalNumber = WTERMSIG(status);
+                cout << "Child process terminated due to signal: " << signalNumber << endl;
+            }
+        }
+
     }
     return EXIT_SUCCESS;
 }
