@@ -48,8 +48,8 @@ enum class Menu
 {
     optionStartRange,
     arrivingFlightsAirport,
-    fullScheduleAirport,
     fullScheduleAircraft,
+    fullScheduleAirport,
     updateDB,
     zipDB,
     childPID,
@@ -289,8 +289,8 @@ void printOptions()
 {
     cout << "~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~" << endl;
     cout << "1 - Fetch airports incoming flights." << endl;
-    cout << "2 - Fetch airports full flights schedule." << endl;
-    cout << "3 - Fetch aircraft full flights schedule." << endl;
+    cout << "2 - Fetch aircraft full flights schedule." << endl;
+    cout << "3 - Fetch airports full flights schedule." << endl;
     cout << "4 - Update DB." << endl;
     cout << "5 - Zip DB files." << endl;
     cout << "6 - Get child process PID." << endl;
@@ -331,8 +331,8 @@ int OptionsHandler(int OpCode, int parentToChild, int childToParent, pid_t &pid)
     {
         // Same Functionality for 1-4
         case (int)Menu::arrivingFlightsAirport: // Same Logic (NO Break)
-        case (int)Menu::fullScheduleAirport:    // Same Logic (NO Break)
-        case (int)Menu::fullScheduleAircraft:   // Same Logic (Handle for 1-3 OpCodes)
+        case (int)Menu::fullScheduleAircraft:   // Same Logic (NO Break)
+        case (int)Menu::fullScheduleAirport:    // Same Logic (Handle for 1-3 OpCodes)
         {
             sendCodeToPipe(parentToChild, OpCode);
             string input = getInputFromUser();
@@ -363,7 +363,7 @@ int OptionsHandler(int OpCode, int parentToChild, int childToParent, pid_t &pid)
                 cout << "DB Zipped successfully" << endl;
             else if (returnStatus == EXIT_FAILURE)
                 cout << "DB Zip failed." << endl;
-            break;
+            return returnStatus;
         }
         case (int)Menu::childPID:
         {
