@@ -61,8 +61,8 @@ enum class Menu
 int main(int argc, char **argv)
 {
     cout << "Program is starting" << endl;
-    // ---- First Pipe setup ----
     int parentToChild[2] = {0, 0}, childToParent[2] = {0, 0}; // create pipes for communication
+    // ---- First Pipe setup ----
     if (pipe(parentToChild) == -1 || pipe(childToParent) == -1)
     {
         cerr << "Failed to create pipe." << endl;
@@ -94,8 +94,8 @@ int main(int argc, char **argv)
             // Child Pipe Setup Continue
             close(parentToChild[WRITE_END]); // Child dont write to this pipe
             close(childToParent[READ_END]);  // Child dont read from this pipe
-
             // Child Signals Setup
+            signal(SIGINT, signalHandlerChild);  // register SIGINT to ignore and handle from the parent
             signal(SIGUSR1, signalHandlerChild); // Register SIGUSR1 of Child
 
             // Logic Process - Child Handling
@@ -184,21 +184,37 @@ int UserInterface(pid_t &pid, int parentToChild, int childToParent) noexcept(fal
     // UI - Main Loop
     while (Running)
     {
-        // 4cout << "Befroe waitpid" << endl;
-        //  if (!waitpid(pid, &child_status, WNOHANG | WUNTRACED | WCONTINUED)) // check that child is still alive without blocking
-        //  {
-        //      cerr << receiveMessage(childToParent) << endl;                          // Printing the error of the child
-        //      cerr << "Error: Child process failed, Exit from the program !" << endl; // Announce program will close.
-        //      return EXIT_FAILURE;
-        //  }
-        // cout << "After waitpid" << endl;
-        printOptions();
-        userChoice = getUserDecision((int)Menu::optionStartRange,
-                                     (int)Menu::optionEndRange,
-                                     (int)ProgramSettings::MaxInputAttempts);
-        returnedStatus = OptionsHandler(userChoice, parentToChild, childToParent, pid);
-        if (userChoice == (int)Menu::Exit)
-            Running = false;
+        int status;
+        pid_t result = waitpid(pid, &status, WNOHANG);
+        if (result == -1)
+        {
+            cerr << "Error occurred while waiting for child process" << endl;
+            return EXIT_FAILURE;
+        }
+        else if (result == 0)
+        {
+            sleep(1);
+            printOptions();
+            userChoice = getUserDecision((int)Menu::optionStartRange,
+                                         (int)Menu::optionEndRange,
+                                         (int)ProgramSettings::MaxInputAttempts);
+            returnedStatus = OptionsHandler(userChoice, parentToChild, childToParent, pid);
+            if (userChoice == (int)Menu::Exit)
+                Running = false;
+        }
+        else
+        {
+            if (WIFEXITED(status)) // child process exited normaly
+            {
+                int exitStatus = WEXITSTATUS(status);
+                cout << "child process exited with status: " << exitStatus << endl;
+            }
+            else if (WIFSIGNALED(status)) // child process terminated
+            {
+                int signalNumber = WTERMSIG(status);
+                cout << "Child process terminated due to signal: " << signalNumber << endl;
+            }
+        }
     }
     return returnedStatus;
 }
@@ -246,7 +262,7 @@ void signalHandlerChild(int signal_number)
     switch (signal_number)
     {
         case SIGINT:
-            cout << "Received SIGINT signal" << endl;
+            cout << "recived SIGINT, ignoring" << endl;
             break;
         case SIGTERM:
             cout << "Received SIGTERM signal" << endl;
@@ -481,29 +497,14 @@ void sendMessage(int pipeWrite, string message) noexcept(false)
 
 void gracefulExit(pid_t childPid)
 {
-    int status;
-    pid_t terminated_pid;
-    cout << "Child PID: " << childPid << endl;
-    terminated_pid = waitpid(pid, &status, WNOHANG); // wait for exit status from child process
-    if (WIFEXITED(status))
-        cout << "Process with PID " << terminated_pid << " terminated with exit status: " << WEXITSTATUS(status) << endl;
-    else if (WIFSTOPPED(status))
-        cout << "Process with PID" << terminated_pid << " blocked to read" << endl;
-    else
-        cout << "Process with PID" << terminated_pid << " not blocked to read" << endl;
-
     if (kill(childPid, SIGUSR1) == 0)
         cout << "SIGUSR1 signal sent to child process." << endl;
     else
         cout << "Failed to send SIGUSR1 signal to child process." << endl;
+    int status;
+    pid_t terminated_pid = waitpid(childPid, &status, WUNTRACED);
 
-    terminated_pid = waitpid(pid, &status, WNOHANG); // wait for exit status from child process
-    if (WIFEXITED(status))
-        cout << "Process with PID " << terminated_pid << " terminated with exit status: " << WEXITSTATUS(status) << endl;
-    else if (WIFSTOPPED(status))
-        cout << "Process with PID" << terminated_pid << " blocked to read" << endl;
-    else
-        cout << "Process with PID" << terminated_pid << " not blocked to read" << endl;
+    cout << "child status: " << WEXITSTATUS(status) << endl;
 }
 
 string getInputFromUser()
