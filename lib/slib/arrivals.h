@@ -2,7 +2,6 @@
 #define __ARRIVALS_H
 
 #include "flightDB.h"
-#include "utility.h"
 #include <iostream>
 #include <set>
 #include <sstream>

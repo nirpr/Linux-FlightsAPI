@@ -1,7 +1,6 @@
 #ifndef __FULL_SCHEDULE_H
 #define __FULL_SCHEDULE_H
-
-#include "utility.h"
+#include "flightDB.h"
 #include <iostream>
 #include <set>
 

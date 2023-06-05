@@ -1,7 +1,5 @@
 #! /bin/bash
 
-# TODO: Need to add error handle examples: no curl apt, curl return [] empty, error in sed to awk commands
-
 # -- Written by Omer Start --
 if [ $# -eq 0 ]; then
     echo "Error: No airport codes provided"
@@ -9,7 +7,6 @@ if [ $# -eq 0 ]; then
 fi
 current_time=$(date +%s)
 time_before_day=$(expr $current_time - 86400)  # 86400 - 24 hours
-echo "Get last 24hours flights into flightsDB"
 for airport in "$@" 
 do
     if ! curl -s --fail "https://opensky-network.org/api/flights/arrival?airport=$airport&begin=$time_before_day&end=$current_time" >/dev/null; then
@@ -51,5 +48,4 @@ do
     fi
     # --- Written by Nir End ---
 done
-echo "Done"
 # -- Written by Omer END --

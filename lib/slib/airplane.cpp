@@ -1,4 +1,6 @@
 #include "airplane.h"
+#include "utility.h"
+
 using namespace std;
 namespace fs = std::filesystem;
 
@@ -38,12 +40,9 @@ void printFlightsByAirplanesToString(const FlightDatabase &DB, set<string> airpl
     {
         set<Flight> flights = DB.getAirplanes(airplane); // need to get only arrivels
         if (flights.size() == 0)
-        {
-            // TODO: airplane bla bla has no flights.
-        }
+            std_Error = std_Error + "INFO: Airplane " + airplane + " is not in the Database.\n";
+
         for (auto &flight : flights)
-        {
             printAirplaneFlightDetailsToString(flight, std_out);
-        }
     }
 }

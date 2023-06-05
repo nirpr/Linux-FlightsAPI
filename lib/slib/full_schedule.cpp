@@ -1,4 +1,6 @@
 #include "full_schedule.h"
+#include "utility.h"
+
 using namespace std;
 
 string full_schedule(string inputs, const FlightDatabase &DB)

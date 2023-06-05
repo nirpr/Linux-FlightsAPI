@@ -1,8 +1,10 @@
 #include "reRun.h"
+#include "utility.h"
+
 using namespace std;
 namespace fs = std::filesystem;
 
-int reRun(const string& inputs, FlightDatabase &DB, string& errorStrOut)
+int reRun(const string &inputs, FlightDatabase &DB, string &errorStrOut)
 {
     int stautsBack;
     set<string> airports;
@@ -27,7 +29,7 @@ int reRun(const string& inputs, FlightDatabase &DB, string& errorStrOut)
     {
         DB.load_DB_from_folder(infoString, true);
     }
-    catch (const exception& e)
+    catch (const exception &e)
     {
         errorStrOut += e.what() + '\n';
     }
