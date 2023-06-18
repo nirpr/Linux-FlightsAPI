@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" modified="2023-06-18T09:21:34.441Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36" etag="7Ldonpnd614-z9sdgLyy" version="21.4.0" type="github">
+<mxfile host="app.diagrams.net" modified="2023-06-18T09:27:28.159Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36" etag="xzgzMfzAOecQfVyLV_3z" version="21.4.0" type="github">
   <diagram name="‫עמוד-1‬" id="GPnjzbN_5mL8qTGkNEVC">
-    <mxGraphModel dx="1443" dy="662" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="583" background="#e4d8d8" math="0" shadow="0">
+    <mxGraphModel dx="1306" dy="662" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="583" background="none" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -37,7 +37,7 @@
             <mxPoint x="217" y="224" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="O_M9rST-j9d9lwmmfin6-14" value="Pipes - FD" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#3F8624;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.iot_analytics_pipeline;" parent="O_M9rST-j9d9lwmmfin6-36" vertex="1">
+        <mxCell id="O_M9rST-j9d9lwmmfin6-14" value="&lt;font&gt;Pipes - FD&lt;/font&gt;" style="sketch=0;outlineConnect=0;fontColor=#FFFFFF;gradientColor=none;fillColor=#59b734;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.iot_analytics_pipeline;labelBackgroundColor=default;labelBorderColor=default;" parent="O_M9rST-j9d9lwmmfin6-36" vertex="1">
           <mxGeometry x="377" y="193" width="78" height="42" as="geometry" />
         </mxCell>
         <mxCell id="O_M9rST-j9d9lwmmfin6-15" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" parent="O_M9rST-j9d9lwmmfin6-36" target="O_M9rST-j9d9lwmmfin6-14" edge="1">
