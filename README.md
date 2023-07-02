@@ -8,12 +8,14 @@ To use this project, follow the steps outlined below:
 
 1. Clone repository  
 2. Ensure you are in the root directory, then copy the following code to the terminal:  
-   "mkdir build  
-    cd build  
-    cmake ..  
-    make  
-    cd ..  
-    ./runMe.out"  
+``` bash
+mkdir build  
+cd build  
+cmake ..  
+make  
+cd ..  
+./runMe.out
+```
 3. Press "UpdateDB" (number 4 in the menu) to create the database. This should be the first action you take.  
 4. Now you can choose different actions from the menu.  
 
