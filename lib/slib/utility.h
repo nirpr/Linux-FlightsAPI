@@ -19,11 +19,6 @@
 #include <sys/wait.h>
 #include <unistd.h> // Pipe libarary
 
-// Defines
-#define READ_END 0
-#define WRITE_END 1
-extern pid_t pid;
-
 // Enum Declerations
 enum class ProgramSettings
 {
@@ -33,12 +28,11 @@ enum class ProgramSettings
 enum class Menu
 {
     optionStartRange,
+    updateDB,
     arrivingFlightsAirport,
     fullScheduleAirport,
     fullScheduleAircraft,
-    updateDB,
     zipDB,
-    childPID,
     Exit,
     optionEndRange
 };
@@ -47,11 +41,9 @@ enum class Menu
 void getDirectoryFromFile(std::string &filePath);
 std::string unix_time_to_date(const time_t &unix_time);
 void printOptions();
-void pipeCleanUp(int parentToChild[2], int childToParent[2]);
+void pipeCleanUp(int pipe1, int pipe2);
 int getUserDecision(int startRange, int endRange, int maxTimes);
 std::string getInputFromUser();
-void signalHandlerParent(int signal_number);
-void signalHandlerChild(int signal_number);
 int LogicProcess(int parentToChild, int childToParent) noexcept(false);
 int OptionsHandler(int OpCode, int parentToChild, int childToParent) noexcept(false);
 void taskHandler(int opCode, int parentToChild, int childToParent, FlightDatabase &flightDB) noexcept(false);
@@ -60,6 +52,5 @@ bool sendCodeToPipe(int writePipe, int OpCode) noexcept(false);
 int receiveCodeFromPipe(int childToParent) noexcept(false);
 std::string receiveMessage(int pipeRead) noexcept(false);
 void sendMessage(int pipeWrite, std::string message) noexcept(false);
-void gracefulExit();
 
 #endif

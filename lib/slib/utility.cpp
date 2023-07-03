@@ -15,18 +15,18 @@ std::string unix_time_to_date(const time_t &unix_time)
     return ctime(&unix_time);
 }
 
-int LogicProcess(int parentToChild, int childToParent) noexcept(false)
+int LogicProcess(int readFD, int writeFD) noexcept(false)
 {
     bool Running = true;
     try
     {
-        FlightDatabase flightDB(true);
+        FlightDatabase flightDB(false);
         // Opening Message for Parent
-        sendMessage(childToParent, "Child Process: Hello world, I'm the CHILD!\n");
+        sendMessage(writeFD, "DB service: Hello world, I'm the DB service!\n");
         int opCode = -1;
         while (Running)
         {
-            opCode = receiveCodeFromPipe(parentToChild);
+            opCode = receiveCodeFromPipe(readFD);
             if (opCode == (int)Menu::Exit || (opCode <= (int)Menu::optionStartRange && (int)Menu::optionEndRange <= opCode))
             {
                 if (opCode == (int)Menu::Exit)
@@ -36,25 +36,25 @@ int LogicProcess(int parentToChild, int childToParent) noexcept(false)
                 }
                 else
                 {
-                    sendMessage(childToParent, "Error: Unknown option recieved to Child, Program Exited.");
+                    sendMessage(writeFD, "Error: Unknown option recieved, Program Exited.");
                     return EXIT_FAILURE;
                 }
             }
             else
-                taskHandler(opCode, parentToChild, childToParent, flightDB);
+                taskHandler(opCode, readFD, writeFD, flightDB);
         }
     }
     catch (const filesystem::filesystem_error &e)
     {
-        sendMessage(childToParent, e.what());
+        sendMessage(writeFD, e.what());
     }
     catch (const runtime_error &e)
     {
         int errorCode = errno;
         if (!(errorCode == EBADF || errorCode == EIO || errorCode == ENOSPC || errorCode == EPIPE)) // Check if failed isn't in pipes
         {
-            sendCodeToPipe(childToParent, errorCode);
-            sendMessage(childToParent, e.what());
+            sendCodeToPipe(writeFD, errorCode);
+            sendMessage(writeFD, e.what());
         }
     }
     catch (const exception &e)
@@ -64,102 +64,46 @@ int LogicProcess(int parentToChild, int childToParent) noexcept(false)
     return EXIT_SUCCESS;
 }
 
-int UserInterface(int parentToChild, int childToParent) noexcept(false)
+int UserInterface(int writeFD, int readFD) noexcept(false)
 {
     bool Running = true;
     int userChoice, returnedStatus = EXIT_FAILURE; // returnedStatus default fail till Option Handler return something
-    // Reading opening message for Parent from Child
-    string openMsg = receiveMessage(childToParent);
+    // Reading opening message for flights service from DB service
+    string openMsg = receiveMessage(readFD);
     cout << openMsg << endl;
     // UI - Main Loop
     while (Running)
     {
-        int status;
-        pid_t result = waitpid(pid, &status, WNOHANG);
-        if (result == -1)
-        {
-            cerr << "Error occurred while waiting for child process" << endl;
-            return EXIT_FAILURE;
-        }
-        else if (result == 0)
-        {
-            printOptions();
-            userChoice = getUserDecision((int)Menu::optionStartRange,
-                                         (int)Menu::optionEndRange,
-                                         (int)ProgramSettings::MaxInputAttempts);
-            returnedStatus = OptionsHandler(userChoice, parentToChild, childToParent);
-            if (userChoice == (int)Menu::Exit)
-                Running = false;
-        }
-        else
-        {
-            if (WIFEXITED(status)) // Child process exited normaly
-            {
-                int exitStatus = WEXITSTATUS(status);
-                cout << "Child process exited with status: " << exitStatus << endl;
-            }
-            else if (WIFSIGNALED(status)) // Child process terminated
-            {
-                int signalNumber = WTERMSIG(status);
-                cout << "Child process terminated due to signal: " << signalNumber << endl;
-            }
-        }
+        printOptions();
+        userChoice = getUserDecision((int)Menu::optionStartRange,
+                                        (int)Menu::optionEndRange,
+                                        (int)ProgramSettings::MaxInputAttempts);
+        returnedStatus = OptionsHandler(userChoice, writeFD, readFD);
+        if (userChoice == (int)Menu::Exit)
+            Running = false;
     }
     return returnedStatus;
 }
 
-void pipeCleanUp(int parentToChild[2], int childToParent[2])
+void pipeCleanUp(int pipe1, int pipe2)
 {
-    // Close Parent to Child - IO Pipe
-    close(parentToChild[READ_END]);
-    close(parentToChild[WRITE_END]);
+    // Close pipe1 - IO Pipe
+    close(pipe1);
 
-    // Close Child to Parent - IO Pipe
-    close(childToParent[READ_END]);
-    close(childToParent[WRITE_END]);
-}
-
-void signalHandlerParent(int signal_number)
-{
-    switch (signal_number)
-    {
-        case SIGINT:
-            cout << endl
-                 << "Received SIGINT signal" << endl;
-            gracefulExit(); // this is the child's pid
-            exit(SIGINT);
-            break;
-        default:
-            cout << "Received unknown signal" << endl;
-    }
-}
-
-void signalHandlerChild(int signal_number)
-{
-    switch (signal_number)
-    {
-        case SIGINT: // Ignoring SIGINT from child's prespective
-            break;
-        case SIGUSR1:
-            FlightDatabase::zipDB();
-            exit(SIGUSR1);
-            break;
-        default:
-            break;
-    }
+    // Close pipe2 - IO Pipe
+    close(pipe2);
 }
 
 void printOptions()
 {
     cout << "~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~" << endl;
-    cout << "1 - Fetch airports incoming flights." << endl;
-    cout << "2 - Fetch airports full flights schedule." << endl;
-    cout << "3 - Fetch aircraft full flights schedule." << endl;
-    cout << "4 - Update DB." << endl;
+    cout << "1 - Fetch airports data." << endl;
+    cout << "2 - Print airports incoming flights." << endl;
+    cout << "3 - Print airports full flights schedule." << endl;
+    cout << "4 - Print aircraft full flights schedule." << endl;
     cout << "5 - Zip DB files." << endl;
-    cout << "6 - Get child process PID." << endl;
-    cout << "7 - Exit." << endl;
-    cout << "Please make your choice <1-7>: ";
+    cout << "6 - Shutdown." << endl;
+    cout << "Please make your choice <1-6>: ";
 }
 
 int getUserDecision(int startRange, int endRange, int maxTimes)
@@ -176,75 +120,56 @@ int getUserDecision(int startRange, int endRange, int maxTimes)
     return UserDecision;
 }
 
-int OptionsHandler(int OpCode, int parentToChild, int childToParent) noexcept(false)
+int OptionsHandler(int OpCode, int writeFD, int readFD) noexcept(false)
 {
     string std_out;
     int returnStatus;
     switch (OpCode)
     {
-        // Same Functionality for 1-3
-        case (int)Menu::arrivingFlightsAirport: // Same Logic (NO Break)
-        case (int)Menu::fullScheduleAirport:    // Same Logic (NO Break)
-        case (int)Menu::fullScheduleAircraft:   // Same Logic (Handle for 1-3 OpCodes)
-        {
-            sendCodeToPipe(parentToChild, OpCode);
-            string input = getInputFromUser();
-            sendMessage(parentToChild, input);
-            std_out = receiveMessage(childToParent);
-            cout << std_out << endl;
-            break;
-        }
         case (int)Menu::updateDB:
         {
-            sendCodeToPipe(parentToChild, OpCode);
+            sendCodeToPipe(writeFD, OpCode);
             string input = getInputFromUser();
-            sendMessage(parentToChild, input);
+            sendMessage(writeFD, input);
             cout << "Waiting for database update." << endl;
-            returnStatus = receiveCodeFromPipe(childToParent);
+            returnStatus = receiveCodeFromPipe(readFD);
             if (returnStatus == EXIT_SUCCESS)
                 cout << "Database updated successfully" << endl;
             else if (returnStatus == EXIT_FAILURE)
                 cout << "Database update failed." << endl;
             return returnStatus;
         }
+        // Same Functionality for 2-4
+        case (int)Menu::arrivingFlightsAirport: // Same Logic (NO Break)
+        case (int)Menu::fullScheduleAirport:    // Same Logic (NO Break)
+        case (int)Menu::fullScheduleAircraft:   // Same Logic (Handle for 1-3 OpCodes)
+        {
+            sendCodeToPipe(writeFD, OpCode);
+            string input = getInputFromUser();
+            sendMessage(writeFD, input);
+            std_out = receiveMessage(readFD);
+            cout << std_out << endl;
+            break;
+        }
+
         case (int)Menu::zipDB:
         {
             cout << "Send task to zip flightDB folder to Child Process" << endl;
-            sendCodeToPipe(parentToChild, OpCode);
-            returnStatus = receiveCodeFromPipe(childToParent);
+            sendCodeToPipe(writeFD, OpCode);
+            returnStatus = receiveCodeFromPipe(readFD);
             if (returnStatus == EXIT_SUCCESS)
                 cout << "Database Zipped successfully" << endl;
             return returnStatus;
         }
-        case (int)Menu::childPID:
-        {
-            cout << "The Process Child's ID: " << pid << endl;
-            break;
-        }
         case (int)Menu::Exit:
         {
-            int status;
-            pid_t terminated_pid;
-            gracefulExit();
-            terminated_pid = waitpid(pid, &status, WUNTRACED); // wait for exit status from child process
-
-            // Printing process exit status
-            if (WIFEXITED(status))
-                cout << "Process with PID " << terminated_pid << " terminated with exit status: " << WEXITSTATUS(status) << endl;
-            else if (WIFSTOPPED(status))
-                cout << "Process with PID" << terminated_pid << " stopped" << endl;
-            if (WEXITSTATUS(status) == SIGUSR1)
-            {
-                cout << "Program Exited Successfully." << endl;
-                return SIGINT;
-            }
-            break;
+            //TODO: write stuff
         }
     }
     return EXIT_SUCCESS;
 }
 
-void taskHandler(int opCode, int parentToChild, int childToParent, FlightDatabase &flightDB) noexcept(false)
+void taskHandler(int opCode, int readFD, int writeFD, FlightDatabase &flightDB) noexcept(false)
 {
     string args;
     string std_out;
@@ -252,31 +177,36 @@ void taskHandler(int opCode, int parentToChild, int childToParent, FlightDatabas
     int statusReturned = -1;
 
     if (opCode == (int)Menu::arrivingFlightsAirport || opCode == (int)Menu::fullScheduleAirport || opCode == (int)Menu::fullScheduleAircraft || opCode == (int)Menu::updateDB)
-        args = receiveMessage(parentToChild);
+        args = receiveMessage(readFD);
 
     switch (opCode)
     {
+        case (int)Menu::updateDB:
+            statusReturned = reRun(args, flightDB, errors);
+            sendCodeToPipe(writeFD, statusReturned);
+            sendMessage(writeFD, errors);
+            break;
         case (int)Menu::arrivingFlightsAirport:
             std_out = arrivals(args, flightDB);
-            sendMessage(childToParent, std_out);
+            sendMessage(writeFD, std_out);
             break;
         case (int)Menu::fullScheduleAirport:
             std_out = full_schedule(args, flightDB);
-            sendMessage(childToParent, std_out);
+            sendMessage(writeFD, std_out);
             break;
         case (int)Menu::fullScheduleAircraft:
             std_out = airplane(args, flightDB);
-            sendMessage(childToParent, std_out);
-            break;
-        case (int)Menu::updateDB:
-            statusReturned = reRun(args, flightDB, errors);
-            sendCodeToPipe(childToParent, statusReturned);
-            sendMessage(childToParent, errors);
+            sendMessage(writeFD, std_out);
             break;
         case (int)Menu::zipDB:
             flightDB.zipDB();
-            sendCodeToPipe(childToParent, EXIT_SUCCESS);
+            sendCodeToPipe(writeFD, EXIT_SUCCESS);
             break;
+        case (int)Menu::Exit:
+            flightDB.zipDB();
+            sendCodeToPipe(writeFD, EXIT_SUCCESS);
+            kill(getpid(), SIGTERM);
+            cout << "your'e not suppose to read this" << endl;
         default:
             break;
     }
@@ -346,18 +276,6 @@ void sendMessage(int pipeWrite, string message) noexcept(false)
         remainingSize -= chunkSize;
         offset += chunkSize;
     }
-}
-
-void gracefulExit()
-{
-    if (kill(pid, SIGUSR1) == 0)
-        cout << "SIGUSR1 signal sent to child process." << endl;
-    else
-        cout << "Failed to send SIGUSR1 signal to child process." << endl;
-    int status;
-    pid_t terminated_pid = waitpid(pid, &status, WUNTRACED);
-
-    cout << "Child's exit status: " << WEXITSTATUS(status) << endl;
 }
 
 string getInputFromUser()
