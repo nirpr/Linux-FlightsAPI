@@ -5,7 +5,6 @@ void pipeCleanUp(int pipe1, int pipe2)
 {
     // Close pipe1 - IO Pipe
     close(pipe1);
-
     // Close pipe2 - IO Pipe
     close(pipe2);
 }
@@ -75,5 +74,3 @@ void sendMessage(int pipeWrite, string message) noexcept(false)
         offset += chunkSize;
     }
 }
-
-

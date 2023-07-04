@@ -27,21 +27,17 @@ int LogicProcess(int readFD, int writeFD) noexcept(false)
         while (Running)
         {
             opCode = receiveCodeFromPipe(readFD);
-            if (opCode == (int)Menu::Exit || (opCode <= (int)Menu::optionStartRange && (int)Menu::optionEndRange <= opCode))
+            if (opCode <= (int)Menu::optionStartRange && (int)Menu::optionEndRange <= opCode)
             {
-                if (opCode == (int)Menu::Exit)
-                {
-                    FlightDatabase::zipDB();
-                    Running = false;
-                }
-                else
-                {
-                    sendMessage(writeFD, "Error: Unknown option recieved, Program Exited.");
-                    return EXIT_FAILURE;
-                }
+                sendMessage(writeFD, "Error: Unknown option recieved, Program Exited.");
+                return EXIT_FAILURE;
             }
             else
+            {
                 taskHandler(opCode, readFD, writeFD, flightDB);
+                if (opCode == (int)Menu::Exit)
+                    return EXIT_SUCCESS;
+            }
         }
     }
     catch (const filesystem::filesystem_error &e)
@@ -79,7 +75,7 @@ void taskHandler(int opCode, int readFD, int writeFD, FlightDatabase &flightDB) 
         case (int)Menu::updateDB:
             statusReturned = reRun(args, flightDB, errors);
             sendCodeToPipe(writeFD, statusReturned);
-            sendMessage(writeFD, errors);
+            // sendMessage(writeFD, errors);
             break;
         case (int)Menu::arrivingFlightsAirport:
             std_out = arrivals(args, flightDB);
@@ -94,17 +90,19 @@ void taskHandler(int opCode, int readFD, int writeFD, FlightDatabase &flightDB) 
             sendMessage(writeFD, std_out);
             break;
         case (int)Menu::zipDB:
-            flightDB.zipDB();
-            sendCodeToPipe(writeFD, EXIT_SUCCESS);
-            break;
         case (int)Menu::Exit:
-            flightDB.zipDB();
-            sendCodeToPipe(writeFD, EXIT_SUCCESS);
-            kill(1, SIGTERM);
-            cout << "your'e not suppose to read this" << endl;
+            try
+            {
+                flightDB.zipDB();
+            }
+            catch (const std::runtime_error &e)
+            {
+                // failed in zipDB
+                sendCodeToPipe(writeFD, EXIT_FAILURE);
+                sendMessage(writeFD, e.what());
+            }
+            break;
         default:
             break;
     }
 }
-
-

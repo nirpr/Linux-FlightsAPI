@@ -57,8 +57,8 @@ int UserInterface(int writeFD, int readFD) noexcept(false)
     {
         printOptions();
         userChoice = getUserDecision((int)Menu::optionStartRange,
-                                        (int)Menu::optionEndRange,
-                                        (int)ProgramSettings::MaxInputAttempts);
+                                     (int)Menu::optionEndRange,
+                                     (int)ProgramSettings::MaxInputAttempts);
         returnedStatus = OptionsHandler(userChoice, writeFD, readFD);
         if (userChoice == (int)Menu::Exit)
             Running = false;
@@ -105,6 +105,12 @@ int OptionsHandler(int OpCode, int writeFD, int readFD) noexcept(false)
             returnStatus = receiveCodeFromPipe(readFD);
             if (returnStatus == EXIT_SUCCESS)
                 cout << "Database Zipped successfully" << endl;
+            else if (returnStatus == EXIT_FAILURE)
+            {
+                string error = receiveMessage(readFD);
+                cerr << error << endl;
+                cout << "Database zip failed" << endl;
+            }
             return returnStatus;
         }
         case (int)Menu::Exit:
@@ -112,11 +118,16 @@ int OptionsHandler(int OpCode, int writeFD, int readFD) noexcept(false)
             sendCodeToPipe(writeFD, OpCode);
             returnStatus = receiveCodeFromPipe(readFD);
             if (returnStatus == EXIT_SUCCESS)
-                cout << "DBservice exited successfully" << endl;
-            kill(1, SIGTERM);
+                cout << "dbService exited successfully" << endl;
+            else if (returnStatus == EXIT_FAILURE)
+            {
+                string error = receiveMessage(readFD);
+                cerr << error << endl;
+                cout << "dbService exited with failure" << endl;
+            }
+            return EXIT_SUCCESS;
             cout << "your'e not suppose to read this" << endl;
         }
     }
     return EXIT_SUCCESS;
 }
-

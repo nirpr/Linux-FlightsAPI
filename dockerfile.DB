@@ -1,8 +1,11 @@
 FROM ubuntu:22.04
 WORKDIR /app
 COPY runMeDB.out /app/runMeDB.out
+COPY dbRunMe.sh /app/dbRunMe.sh
 COPY flightScanner.sh /app/flightScanner.sh
 RUN apt-get update && apt-get install -y \
-	libzip4 zip
+	libzip4 zip curl
 RUN chmod +x /app/flightScanner.sh
+RUN chmod +x /app/dbRunMe.sh
+
 CMD ./runMeDB.out

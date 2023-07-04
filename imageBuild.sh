@@ -1,7 +1,12 @@
 #! /bin/bash
 
-sudo docker build -t db_service:1.1 -f dockerfile.DB .
+mkdir build  
+cd build  
+cmake ..  
+make  
+cd ..  
 
-sudo docker build -t flights_service:1.1 -f dockerfile.flights .
+sudo docker build -t db_service:2.0 -f dockerfile.DB .
+sudo docker build -t flights_service:2.0 -f dockerfile.flights .
 
 
