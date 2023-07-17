@@ -32,9 +32,9 @@ enum class Menu
 
 
 void pipeCleanUp(int pipe1, int pipe2);
-bool sendCodeToPipe(int writePipe, int OpCode) noexcept(false);
+int sendCodeToPipe(int writePipe, int OpCode) noexcept(false);
 int receiveCodeFromPipe(int childToParent) noexcept(false);
-std::string receiveMessage(int pipeRead) noexcept(false);
-void sendMessage(int pipeWrite, std::string message) noexcept(false);
+std::string receiveMessage(int pipeRead, int* errorInd) noexcept(false);
+void sendMessage(int pipeWrite, std::string message, int* errorInd) noexcept(false);
 
 #endif

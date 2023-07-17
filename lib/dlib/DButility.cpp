@@ -18,18 +18,19 @@ std::string unix_time_to_date(const time_t &unix_time)
 int LogicProcess(int readFD, int writeFD) noexcept(false)
 {
     bool Running = true;
+    int errorInd = 0;
     try
     {
         FlightDatabase flightDB(false);
         // Opening Message for Parent
-        sendMessage(writeFD, "DB service: Hello world, I'm the DB service!\n");
+        //sendMessage(writeFD, "DB service: Hello world, I'm the DB service!\n", &errorInd);
         int opCode = -1;
         while (Running)
         {
             opCode = receiveCodeFromPipe(readFD);
             if (opCode <= (int)Menu::optionStartRange && (int)Menu::optionEndRange <= opCode)
             {
-                sendMessage(writeFD, "Error: Unknown option recieved, Program Exited.");
+                sendMessage(writeFD, "Error: Unknown option recieved, Program Exited.", &errorInd);
                 return EXIT_FAILURE;
             }
             else
@@ -42,7 +43,7 @@ int LogicProcess(int readFD, int writeFD) noexcept(false)
     }
     catch (const filesystem::filesystem_error &e)
     {
-        sendMessage(writeFD, e.what());
+        sendMessage(writeFD, e.what(), &errorInd);
     }
     catch (const runtime_error &e)
     {
@@ -50,7 +51,7 @@ int LogicProcess(int readFD, int writeFD) noexcept(false)
         if (!(errorCode == EBADF || errorCode == EIO || errorCode == ENOSPC || errorCode == EPIPE)) // Check if failed isn't in pipes
         {
             sendCodeToPipe(writeFD, errorCode);
-            sendMessage(writeFD, e.what());
+            sendMessage(writeFD, e.what(), &errorInd);
         }
     }
     catch (const exception &e)
@@ -65,41 +66,42 @@ void taskHandler(int opCode, int readFD, int writeFD, FlightDatabase &flightDB) 
     string args;
     string std_out;
     string errors;
+    int errorInd = 0;
     int statusReturned = -1;
 
     if (opCode == (int)Menu::arrivingFlightsAirport || opCode == (int)Menu::fullScheduleAirport || opCode == (int)Menu::fullScheduleAircraft || opCode == (int)Menu::updateDB)
-        args = receiveMessage(readFD);
+        args = receiveMessage(readFD, &errorInd);
 
     switch (opCode)
     {
         case (int)Menu::updateDB:
             statusReturned = reRun(args, flightDB, errors);
-            sendCodeToPipe(writeFD, statusReturned);
-            // sendMessage(writeFD, errors);
+            errorInd = sendCodeToPipe(writeFD, statusReturned);
             break;
         case (int)Menu::arrivingFlightsAirport:
             std_out = arrivals(args, flightDB);
-            sendMessage(writeFD, std_out);
+            sendMessage(writeFD, std_out, &errorInd);
             break;
         case (int)Menu::fullScheduleAirport:
             std_out = full_schedule(args, flightDB);
-            sendMessage(writeFD, std_out);
+            sendMessage(writeFD, std_out, &errorInd);
             break;
         case (int)Menu::fullScheduleAircraft:
             std_out = airplane(args, flightDB);
-            sendMessage(writeFD, std_out);
+            sendMessage(writeFD, std_out, &errorInd);
             break;
         case (int)Menu::zipDB:
         case (int)Menu::Exit:
             try
             {
                 flightDB.zipDB();
+                errorInd = sendCodeToPipe(writeFD, EXIT_SUCCESS);
             }
             catch (const std::runtime_error &e)
             {
                 // failed in zipDB
-                sendCodeToPipe(writeFD, EXIT_FAILURE);
-                sendMessage(writeFD, e.what());
+                errorInd = sendCodeToPipe(writeFD, EXIT_FAILURE);
+                sendMessage(writeFD, e.what(), &errorInd);
             }
             break;
         default:

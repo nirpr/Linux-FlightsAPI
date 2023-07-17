@@ -2,11 +2,18 @@
 #include "flib/flightsUtility.h"
 #include <fcntl.h>
 #include <unistd.h>
-
+#include <signal.h>
 using namespace std;
+
+
+void sigpipeHandler(int signal) {
+    std::cerr << "Caught SIGPIPE signal. Writing to closed pipe." << std::endl;
+}
 
 int main()
 {
+    signal(SIGPIPE, sigpipeHandler);
+
     string serviceToFlights_str = "/tmp/flights_pipe/dbServiceToFlightsService";
     string flightsToService_str = "/tmp/flights_pipe/flightsServiceToDbService";
 

@@ -4,9 +4,15 @@
 #include <unistd.h>
 
 using namespace std;
+#include <signal.h>
+
+void sigpipeHandler(int signal) {
+    std::cerr << "Caught SIGPIPE signal. Writing to closed pipe." << std::endl;
+}
 
 int main()
 {
+    signal(SIGPIPE, sigpipeHandler);
     string serviceToFlights_str = "/tmp/flights_pipe/dbServiceToFlightsService";
     string flightsToService_str = "/tmp/flights_pipe/flightsServiceToDbService";
     int resPipe1 = mkfifo(serviceToFlights_str.c_str(), 0666);

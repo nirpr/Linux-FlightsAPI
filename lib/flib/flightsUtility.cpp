@@ -49,9 +49,7 @@ int UserInterface(int writeFD, int readFD) noexcept(false)
 {
     bool Running = true;
     int userChoice, returnedStatus = EXIT_FAILURE; // returnedStatus default fail till Option Handler return something
-    // Reading opening message for flights service from DB service
-    string openMsg = receiveMessage(readFD);
-    cout << openMsg << endl;
+
     // UI - Main Loop
     while (Running)
     {
@@ -60,8 +58,16 @@ int UserInterface(int writeFD, int readFD) noexcept(false)
                                      (int)Menu::optionEndRange,
                                      (int)ProgramSettings::MaxInputAttempts);
         returnedStatus = OptionsHandler(userChoice, writeFD, readFD);
+        if (returnedStatus == -1)
+        {
+            (void)system("clear");
+            cout << "It appears that dbService is down, try again." << endl << endl;
+        }
         if (userChoice == (int)Menu::Exit)
+        {
+            cout << "Shutting down, Goodbye!" << endl;
             Running = false;
+        }
     }
     return returnedStatus;
 }
@@ -70,15 +76,22 @@ int OptionsHandler(int OpCode, int writeFD, int readFD) noexcept(false)
 {
     string std_out;
     int returnStatus;
+    int errorInd = 0;
     switch (OpCode)
     {
         case (int)Menu::updateDB:
         {
-            sendCodeToPipe(writeFD, OpCode);
+            errorInd = sendCodeToPipe(writeFD, OpCode);
+            if (errorInd == -1)
+                break;
             string input = getInputFromUser();
-            sendMessage(writeFD, input);
+            sendMessage(writeFD, input, &errorInd);
+            if (errorInd == -1)
+                break;
             cout << "Waiting for database update." << endl;
             returnStatus = receiveCodeFromPipe(readFD);
+            if (returnStatus == -1)
+                break;
             if (returnStatus == EXIT_SUCCESS)
                 cout << "Database updated successfully" << endl;
             else if (returnStatus == EXIT_FAILURE)
@@ -90,44 +103,65 @@ int OptionsHandler(int OpCode, int writeFD, int readFD) noexcept(false)
         case (int)Menu::fullScheduleAirport:    // Same Logic (NO Break)
         case (int)Menu::fullScheduleAircraft:   // Same Logic (Handle for 1-3 OpCodes)
         {
-            sendCodeToPipe(writeFD, OpCode);
+            errorInd = sendCodeToPipe(writeFD, OpCode);
+            if (errorInd == -1)
+                break;
             string input = getInputFromUser();
-            sendMessage(writeFD, input);
-            std_out = receiveMessage(readFD);
+            sendMessage(writeFD, input, &errorInd);
+            if (errorInd == -1)
+                break;
+            std_out = receiveMessage(readFD, &errorInd);
+            if (errorInd == -1)
+                break;
             cout << std_out << endl;
             break;
         }
-
         case (int)Menu::zipDB:
         {
             cout << "Send task to zip flightDB folder to Child Process" << endl;
-            sendCodeToPipe(writeFD, OpCode);
+            errorInd = sendCodeToPipe(writeFD, OpCode);
+            if (errorInd == -1)
+                break;
             returnStatus = receiveCodeFromPipe(readFD);
             if (returnStatus == EXIT_SUCCESS)
                 cout << "Database Zipped successfully" << endl;
             else if (returnStatus == EXIT_FAILURE)
             {
-                string error = receiveMessage(readFD);
+                string error = receiveMessage(readFD, &errorInd);
                 cerr << error << endl;
                 cout << "Database zip failed" << endl;
+            }
+            else if (returnStatus == -1)
+            {
+                errorInd = -1;
+                break;
             }
             return returnStatus;
         }
         case (int)Menu::Exit:
         {
-            sendCodeToPipe(writeFD, OpCode);
+            errorInd = sendCodeToPipe(writeFD, OpCode);
+            if (errorInd == -1)
+                break;
             returnStatus = receiveCodeFromPipe(readFD);
             if (returnStatus == EXIT_SUCCESS)
                 cout << "dbService exited successfully" << endl;
             else if (returnStatus == EXIT_FAILURE)
             {
-                string error = receiveMessage(readFD);
+                string error = receiveMessage(readFD, &errorInd);
                 cerr << error << endl;
                 cout << "dbService exited with failure" << endl;
+            }
+            else if (returnStatus == -1)
+            {
+                errorInd = -1;
+                break;
             }
             return EXIT_SUCCESS;
             cout << "your'e not suppose to read this" << endl;
         }
     }
+    if (errorInd == -1)
+        return -1;
     return EXIT_SUCCESS;
 }
