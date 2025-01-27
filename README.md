@@ -1,7 +1,9 @@
 # Interface to print flights details from OpenSky Network
+This project, created by Omer Kriger, Or Segal, and Nir Peretz, provides a command line interface for printing flight details from the OpenSky Network. The project is designed to run on a Linux environment.
+
 This project, created by Omer Kriger, Or Segal, and Nir Peretz, provides an interface for printing flight details from the OpenSky Network. The project is designed to run on a Linux environment.
 
-This project leverages processes and communication between them to enhance its functionality. By utilizing this approach, the program is able to effectively handle multiple tasks simultaneously, resulting in improved performance and efficient execution.
+This project leverages two Docker containers pulled from Docker Hub, managing them as separate processes that communicate with each other to perform different tasks. By using Docker, the program ensures a consistent runtime environment, simplifies dependency management, and enhances functionality through efficient process management. This design allows the program to handle multiple tasks simultaneously, resulting in improved performance and efficient execution.
 
 # STEPS for using:  
 To use this project, follow the steps outlined below:  
@@ -9,15 +11,17 @@ To use this project, follow the steps outlined below:
 1. Clone repository  
 2. Ensure you are in the root directory, then copy the following code to the terminal:  
 ``` bash
-mkdir build  
-cd build  
-cmake ..  
-make  
-cd ..  
-./runMe.out
+bash init.sh
 ```
-3. Press "UpdateDB" (number 4 in the menu) to create the database. This should be the first action you take.  
-4. Now you can choose different actions from the menu.  
+3. Press "Fetch airports data" (number 1 on the menu) to create the database. This should be the first action you take.  
+4. Now you can choose different actions from the menu.
+
+# Docker Containers
+This project utilizes two different Docker containers that are pulled from Docker Hub:
+
+Container 1: [flights_service](https://hub.docker.com/repository/docker/nirp13/flights_service/general)  
+Container 2: [DB_service](https://hub.docker.com/repository/docker/nirp13/db_service/general)   
+These containers are integral to the functionality of the program and are automatically managed during the setup process.
 
 # General Notes:
 Please take note of the following general information: 
