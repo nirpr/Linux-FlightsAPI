@@ -1,0 +1,4 @@
+FROM ubuntu:22.04
+WORKDIR /app
+COPY runMeFlights.out /app/runMeFlights.out
+CMD ./runMeFlights.out
