@@ -1,8 +1,6 @@
 # CLI to print flights details from OpenSky Network
 This project, created by Omer Kriger, Or Segal, and Nir Peretz, provides a command line interface for printing flight details from the OpenSky Network. The project is designed to run on a Linux environment.
 
-This project, created by Omer Kriger, Or Segal, and Nir Peretz, provides an interface for printing flight details from the OpenSky Network. The project is designed to run on a Linux environment.
-
 This project leverages two Docker containers pulled from Docker Hub, managing them as separate processes that communicate with each other to perform different tasks. By using Docker, the program ensures a consistent runtime environment, simplifies dependency management, and enhances functionality through efficient process management. This design allows the program to handle multiple tasks simultaneously, resulting in improved performance and efficient execution.
 
 # STEPS for using:  
