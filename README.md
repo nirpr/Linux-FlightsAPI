@@ -3,16 +3,24 @@ This project, created by Omer Kriger, Or Segal, and Nir Peretz, provides a comma
 
 This project leverages two Docker containers pulled from Docker Hub, managing them as separate processes that communicate with each other to perform different tasks. By using Docker, the program ensures a consistent runtime environment, simplifies dependency management, and enhances functionality through efficient process management. This design allows the program to handle multiple tasks simultaneously, resulting in improved performance and efficient execution.
 
-# STEPS for using:  
+# Installation and Setup
 To use this project, follow the steps outlined below:  
 
-1. Clone repository  
-2. Ensure you are in the root directory, then copy the following code to the terminal:  
+### 1. Clone the repository  
+ ``` bash
+git clone https://github.com/nirpr/Linux-FlightsAPI.git
+cd Linux-FlightsAPI
+```
+### 2. Run the initialization Script   
+Ensure you are in the root directory and execute the following command (you may need sudo depending on your Docker setup):  
 ``` bash
 bash init.sh
 ```
-3. Press "Fetch airports data" (number 1 on the menu) to create the database. This should be the first action you take.  
-4. Now you can choose different actions from the menu.
+### 3. Set up the database   
+In the menu, select "Fetch airports data" (option 1).   
+This step must be completed before using any other features.   
+### 4. Explore the available options   
+After the database is set up, you can choose different actions from the menu.
 
 # Docker Containers
 This project utilizes two different Docker containers that are pulled from Docker Hub:
